@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit environment files
+.env
+.env.local
+.env.*.local
+
+# Build output
+client/dist/
+dist/
+
+# Logs & OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# AI tooling config (not project source)
+.claude/
