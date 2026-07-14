@@ -9,13 +9,11 @@ const interviewSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     candidate: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     scheduledAt: { type: Date, required: true },
     // Unguessable room code — meeting access control, not sequential IDs
@@ -37,5 +35,10 @@ const interviewSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Dashboard list queries filter by participant and sort by time —
+// compound indexes cover both sides of the $or without a collection scan.
+interviewSchema.index({ interviewer: 1, scheduledAt: -1 });
+interviewSchema.index({ candidate: 1, scheduledAt: -1 });
 
 export default mongoose.model("Interview", interviewSchema);

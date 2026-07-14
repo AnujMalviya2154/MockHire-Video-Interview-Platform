@@ -75,9 +75,10 @@ video-interview-platform/
 │       ├── config/db.js        # mongoose connection
 │       ├── models/             # User.js, Interview.js
 │       ├── middleware/         # auth.js, errorHandler.js
-│       ├── routes/             # auth.js  (+interviews.js — M2)
+│       ├── routes/             # auth.js, interviews.js
 │       ├── socket/             # signaling (planned — M3)
 │       └── utils/asyncHandler.js
+│   └── tests/                  # integration suites (run against live server)
 └── client/                     # React SPA (planned — M4/M5)
 ```
 
@@ -154,11 +155,47 @@ collapses unexpected errors to a bare 500 with details only in server logs.
 
 ---
 
-## 4. Interview API *(planned — M2)*
-REST resource design, ownership scoping (`interviewer: req.user._id` OR
-`candidate: req.user._id` in every query — IDOR-proof by construction),
-role-gated creation, feedback privacy (candidate sees result, never
-comments). Will be documented here when built.
+## 4. Interview API — ✅ built in M2
+
+All routes under `/api/interviews` sit behind `requireAuth` (router-level
+`router.use`). Full decisions in `docs/decisions/M2-interview-api.md`.
+
+| Method | Route | Who | Purpose |
+|---|---|---|---|
+| POST | `/` | interviewer | Schedule: title, candidateEmail → resolved server-side, future date |
+| GET | `/?page&limit&status` | any participant | Own interviews, paginated (limit ≤ 50), newest first |
+| GET | `/room/:roomCode` | participant only | Join-time lookup; 404 for outsiders, 410 if cancelled |
+| PATCH | `/:id/feedback` | owning interviewer | rating 1–5 + comments + pass/fail ⇒ status `completed` |
+| PATCH | `/:id/cancel` | owning interviewer | Only from `scheduled` state |
+
+### The four load-bearing patterns
+
+**1. Ownership scoping in the query (IDOR-proof by construction)**
+```js
+// not: findById(id) then check — the check can be forgotten
+Interview.findOne({ _id: id, interviewer: req.user._id })
+// list: only ever what you belong to
+{ $or: [{ interviewer: me }, { candidate: me }] }
+```
+An unauthorized document is *invisible*, not *forbidden* — so probing ids
+returns 404, identical to a missing id (no existence leak).
+
+**2. Identity from the session, never the body.** `interviewer` is always
+`req.user._id`; the candidate is chosen by email and resolved/validated
+server-side (must exist, must have candidate role, can't be yourself).
+
+**3. Viewer-dependent response shaping.** `shapeForViewer()` strips
+`feedback.rating`/`comments` for candidates — they see only
+pass/fail/pending. Privacy enforced at serialization, not in the UI.
+
+**4. Status state machine.** `scheduled → completed | cancelled`, nothing
+else; invalid transitions → 409. Impossible states are unrepresentable.
+
+### Testing
+`server/tests/m2-interviews.test.mjs` — 27 integration assertions against
+the live server + Atlas: every role gate, every validation branch, IDOR
+probes by a third "outsider" user, feedback privacy from both viewpoints,
+state-machine violations, anonymous access. Self-cleaning.
 
 ## 5. Realtime layer *(planned — M3)*
 Socket.IO handshake auth via the same JWT cookie path
@@ -193,8 +230,10 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Payload cap 10 kb, length caps everywhere | ✅ M1 |
 | Helmet headers, x-powered-by removed, trust proxy | ✅ M1 |
 | Secrets only via env; .env gitignored from first commit | ✅ M0 |
-| Unguessable room codes | ✅ M1 (model) — enforced at join in M2/M3 |
-| Ownership-scoped queries (IDOR) | M2 |
+| Unguessable room codes | ✅ M1 (model) — REST join gate ✅ M2; socket gate M3 |
+| Ownership-scoped queries (IDOR) | ✅ M2 |
+| Feedback privacy (viewer shaping) | ✅ M2 |
+| Pagination + capped limits + covering indexes | ✅ M2 |
 | Socket handshake auth + room authorization | M3 (helper ready) |
 | React output escaping, no unsafe HTML | M4/M5 |
 

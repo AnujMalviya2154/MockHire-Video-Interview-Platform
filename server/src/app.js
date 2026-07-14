@@ -7,6 +7,7 @@ import mongoSanitize from "express-mongo-sanitize";
 import morgan from "morgan";
 
 import authRoutes from "./routes/auth.js";
+import interviewRoutes from "./routes/interviews.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -51,6 +52,7 @@ if (process.env.NODE_ENV !== "production") {
 // ── Routes ──────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
+app.use("/api/interviews", interviewRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
