@@ -76,7 +76,7 @@ video-interview-platform/
 │       ├── models/             # User.js, Interview.js
 │       ├── middleware/         # auth.js, errorHandler.js
 │       ├── routes/             # auth.js, interviews.js
-│       ├── socket/             # signaling (planned — M3)
+│       ├── socket/             # index.js — auth'd signaling, chat, code sync
 │       └── utils/asyncHandler.js
 │   └── tests/                  # integration suites (run against live server)
 └── client/                     # React SPA (planned — M4/M5)
@@ -197,11 +197,59 @@ the live server + Atlas: every role gate, every validation branch, IDOR
 probes by a third "outsider" user, feedback privacy from both viewpoints,
 state-machine violations, anonymous access. Self-cleaning.
 
-## 5. Realtime layer *(planned — M3)*
-Socket.IO handshake auth via the same JWT cookie path
-(`verifyTokenFromCookieHeader` — already implemented in M1), DB-checked
-room join, signaling relay design, and why the server relays signals but
-never media.
+## 5. Realtime layer — ✅ built in M3
+
+`server/src/socket/index.js`, attached to the same HTTP server as Express
+(same port ⇒ same origin ⇒ the httpOnly JWT cookie rides the websocket
+handshake automatically). Full decisions in
+`docs/decisions/M3-signaling-layer.md`.
+
+### Connection lifecycle
+
+```
+connect ──► io.use middleware ──► verifyTokenFromCookieHeader()
+                │ fail: handshake refused ("unauthorized")
+                ▼ ok: socket.user = {id, name, role}   (server-verified)
+"join-room"(roomCode, ack)
+                │ regex-validate code → load Interview from DB
+                │ caller must BE interviewer or candidate  (else "not found")
+                │ cancelled? refused · 2 distinct users max (refresh OK)
+                ▼
+        socket joins room; peer gets "peer-joined";
+        joiner's ack carries current code-pad state (refresh resync)
+                │
+   ┌────────────┼──────────────┬───────────────┐
+   ▼            ▼              ▼               ▼
+"signal"    "chat-message"  "code-change"  "code-language"
+relay SDP/  relay text      sync pad       whitelist enum
+ICE to peer (≤1000 chars,   (≤50kb, drop   (js/py/java/
+(opaque)    truncate)       if over)       cpp/plaintext)
+   └────────────┴──────────────┴───────────────┘
+        all wrapped in inRoom() guard — no authorized room, no relay
+                │
+"disconnect" ──► peer gets "peer-left"; participant removed only when
+                 their last socket closes; last-one-out deletes room state
+```
+
+### Design facts to internalize
+- **One auth path:** the socket handshake uses the *same* verify function
+  as REST (incl. tokenVersion revocation) — a logout kills sockets' auth too.
+- **Two gates, not one:** unguessable room code (possession) AND DB-checked
+  membership (identity). A leaked link is useless to a non-participant.
+- **The server introduces, browsers talk:** SDP/ICE relayed opaquely;
+  media is peer-to-peer DTLS-SRTP — the server cannot see calls.
+- **Per-socket token bucket** (30 events/s) + 100 kb packet cap: the
+  websocket is not an unthrottled side channel around M1's HTTP limits.
+- **Ephemeral by design:** chat/pad state live in a Map, resynced on
+  refresh, deleted when the room empties. The durable record is M2's
+  feedback, not the conversation.
+
+### Testing
+`server/tests/m3-signaling.test.mjs` — 22 assertions with real
+socket.io-client connections: anonymous handshake refusal, outsider
+rejection (indistinguishable from missing), relay scoping, chat
+truncation + HTML-as-text, language whitelist, refresh resync, room-less
+event dropping, post-cancellation lockout. Self-cleaning.
 
 ## 6. WebRTC call flow *(planned — M5)*
 Offer/answer/ICE sequence diagram, STUN's role, getUserMedia /
@@ -234,7 +282,8 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Ownership-scoped queries (IDOR) | ✅ M2 |
 | Feedback privacy (viewer shaping) | ✅ M2 |
 | Pagination + capped limits + covering indexes | ✅ M2 |
-| Socket handshake auth + room authorization | M3 (helper ready) |
+| Socket handshake auth + room authorization | ✅ M3 |
+| Socket event rate limiting + payload caps | ✅ M3 |
 | React output escaping, no unsafe HTML | M4/M5 |
 
 ---
