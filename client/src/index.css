@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* MockHire design tokens — one accent, warm neutrals, calm surfaces */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+
+  --color-ink-950: #16161d;
+  --color-ink-900: #1f1f28;
+  --color-ink-700: #3f3f4d;
+  --color-ink-500: #6e6e80;
+  --color-ink-400: #9494a6;
+  --color-ink-200: #dcdce4;
+  --color-ink-100: #ececf1;
+  --color-ink-50: #f6f6f9;
+
+  --color-accent-700: #3730a3;
+  --color-accent-600: #4f46e5;
+  --color-accent-500: #6366f1;
+  --color-accent-100: #e0e7ff;
+  --color-accent-50: #eef2ff;
+
+  --color-ok-600: #059669;
+  --color-ok-100: #d1fae5;
+  --color-warn-600: #d97706;
+  --color-warn-100: #fef3c7;
+  --color-bad-600: #dc2626;
+  --color-bad-100: #fee2e2;
+
+  --shadow-card: 0 1px 2px rgb(22 22 29 / 0.05), 0 4px 16px rgb(22 22 29 / 0.06);
+  --shadow-pop: 0 2px 6px rgb(22 22 29 / 0.08), 0 12px 40px rgb(22 22 29 / 0.14);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color: var(--color-ink-900);
+  background: var(--color-ink-50);
+}
+
+::selection {
+  background: var(--color-accent-100);
+}
+
+/* Focus visibility — keyboard users always see where they are */
+:focus-visible {
+  outline: 2px solid var(--color-accent-600);
+  outline-offset: 2px;
+}

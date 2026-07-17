@@ -255,9 +255,46 @@ event dropping, post-cancellation lockout. Self-cleaning.
 Offer/answer/ICE sequence diagram, STUN's role, getUserMedia /
 getDisplayMedia, and the renegotiation used for screen share.
 
-## 7. Frontend architecture *(planned — M4/M5)*
-Route map, auth context, protected routes, API client, and the interview
-room component's state machine.
+## 7. Frontend architecture — ✅ foundation built in M4
+
+`client/` — React 18 + Vite + Tailwind v4. Full decisions in
+`docs/decisions/M4-client-foundation.md`.
+
+### Route map (`src/main.jsx`)
+```
+/                Landing (public, GSAP entrance, reduced-motion aware)
+/login           GuestOnly ─┐  logged-in users bounce to /dashboard
+/register        GuestOnly ─┘  (role picker: candidate | interviewer)
+/dashboard       Protected — upcoming/past lists, schedule/cancel/feedback
+/room/:roomCode  Protected — lobby in M4; WebRTC + chat + editor in M5
+*                → /
+```
+Guards render nothing until the initial `GET /auth/me` resolves — no
+flash of the wrong page, no client-side auth guessing.
+
+### Data flow
+```
+components → lib/api.js (single fetch wrapper, credentials:"include",
+             ApiError normalization — NO token handling: cookie is
+             httpOnly, invisible to JS by design)
+           → AuthContext (mirrors /auth/me; login/register/logout)
+```
+Vite dev proxy maps `/api` + `/socket.io` → :5000, so dev is same-origin
+and the cookie flows naturally; the bundle contains no server URLs.
+
+### Design system
+Tailwind v4 `@theme` tokens: ink neutral scale, single indigo accent,
+semantic ok/warn/bad — consumed by ~8 primitives in `components/ui.jsx`
+(Button variants, Input/Field, StatusBadge, Modal with Escape/click-out/
+scroll-lock, Spinner). No component library — deliberate (D4.4).
+
+### Security posture in the client
+- Role checks in UI are *presentation only* — server enforces (e.g. the
+  Cancel button is interviewer-only in UI, but the API would 403 anyway).
+- All user content rendered as React text nodes; no dangerouslySetInnerHTML.
+- Errors surface the server's generic messages verbatim; nothing invented.
+- Verified E2E in a real browser incl. feedback privacy (candidate's
+  API payload carries only `{result}`) and room-URL probing (404/401).
 
 ---
 
@@ -284,7 +321,8 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Pagination + capped limits + covering indexes | ✅ M2 |
 | Socket handshake auth + room authorization | ✅ M3 |
 | Socket event rate limiting + payload caps | ✅ M3 |
-| React output escaping, no unsafe HTML | M4/M5 |
+| React output escaping, no unsafe HTML | ✅ M4 (room UI completes in M5) |
+| Client holds no secrets / no token in JS | ✅ M4 |
 
 ---
 
