@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, ApiError } from "../lib/api";
 import Modal from "./Modal";
-import { Button, Field, Input, ErrorNote } from "./ui";
+import { Button, Field, Input, Textarea, ErrorNote } from "./ui";
 
 // Local datetime string for the min attribute — prevents picking a past
 // time in the UI. The server independently rejects past times too.
@@ -48,7 +48,14 @@ export default function ScheduleModal({ onClose, onCreated }) {
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <ErrorNote>{error}</ErrorNote>
         <Field label="Title">
-          <Input required maxLength={120} value={form.title} onChange={set("title")} placeholder="e.g. Frontend Round 1" />
+          <Input
+            required
+            autoFocus
+            maxLength={120}
+            value={form.title}
+            onChange={set("title")}
+            placeholder="e.g. Frontend Round 1"
+          />
         </Field>
         <Field label="Candidate email">
           <Input
@@ -58,6 +65,9 @@ export default function ScheduleModal({ onClose, onCreated }) {
             onChange={set("candidateEmail")}
             placeholder="candidate@example.com"
           />
+          <span className="mt-1 block text-xs text-ink-500">
+            They need a MockHire candidate account with this email.
+          </span>
         </Field>
         <Field label="Date & time">
           <Input
@@ -69,14 +79,18 @@ export default function ScheduleModal({ onClose, onCreated }) {
           />
         </Field>
         <Field label="Notes (optional)">
-          <textarea
+          <Textarea
             maxLength={1000}
             rows={3}
             value={form.description}
             onChange={set("description")}
             placeholder="Topics to cover, links to share…"
-            className="w-full resize-none rounded-lg border-0 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm ring-1 ring-ink-200 placeholder:text-ink-400 focus:ring-2 focus:ring-accent-600"
           />
+          {form.description.length > 800 && (
+            <span className="mt-1 block text-right text-xs tabular-nums text-ink-500">
+              {form.description.length}/1000
+            </span>
+          )}
         </Field>
         <div className="mt-2 flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>

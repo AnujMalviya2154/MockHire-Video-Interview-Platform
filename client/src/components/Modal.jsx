@@ -1,8 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
 
-// Accessible modal shell: click-outside + Escape to close, focus trapped
-// to the panel, backdrop scroll locked. Content is passed as children.
+// Accessible modal shell: Escape + click-outside to close, scroll lock,
+// entrance motion (quick scale-settle; reduced-motion gets it instantly).
 export default function Modal({ title, onClose, children }) {
+  const panelRef = useRef(null);
+  const backdropRef = useRef(null);
+
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -13,24 +18,38 @@ export default function Modal({ title, onClose, children }) {
     };
   }, [onClose]);
 
+  useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gsap.from(backdropRef.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
+    gsap.from(panelRef.current, {
+      opacity: 0,
+      y: 14,
+      scale: 0.97,
+      duration: 0.28,
+      ease: "power3.out",
+    });
+  });
+
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-ink-950/40 p-4 backdrop-blur-sm"
+      ref={backdropRef}
+      className="fixed inset-0 z-[var(--z-modal)] grid place-items-center bg-ink-950/45 p-4 backdrop-blur-sm"
       onMouseDown={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
       <div
+        ref={panelRef}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[var(--shadow-pop)]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-ink-900">{title}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight text-ink-950">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="grid h-8 w-8 place-items-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+            className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-700"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M6 6l12 12M18 6L6 18" />

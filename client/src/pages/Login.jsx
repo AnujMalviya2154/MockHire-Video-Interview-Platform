@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
-import { Logo, Button, Field, Input, ErrorNote } from "../components/ui";
+import { Button, Field, Input, ErrorNote, PasswordInput } from "../components/ui";
+import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,52 +30,36 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-ink-50">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Logo />
-        <Link to="/register" className="text-sm font-medium text-accent-600 hover:text-accent-700">
-          Create account
-        </Link>
-      </header>
-
-      <main className="mx-auto flex max-w-md flex-col px-6 pt-10 pb-20">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-ink-500">Sign in to manage your interviews.</p>
-
-        <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
-          <ErrorNote>{error}</ErrorNote>
-          <Field label="Email">
-            <Input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-            />
-          </Field>
-          <Field label="Password">
-            <Input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </Field>
-          <Button type="submit" disabled={busy} className="mt-2 w-full">
-            {busy ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-ink-500">
-          New here?{" "}
-          <Link to="/register" className="font-medium text-accent-600 hover:text-accent-700">
-            Create an account
-          </Link>
-        </p>
-      </main>
-    </div>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to manage your interviews."
+      alt={{ text: "New here?", cta: "Create an account", to: "/register" }}
+    >
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <ErrorNote>{error}</ErrorNote>
+        <Field label="Email">
+          <Input
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </Field>
+        <Field label="Password">
+          <PasswordInput
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+        </Field>
+        <Button type="submit" disabled={busy} className="mt-2 w-full">
+          {busy ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

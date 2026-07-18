@@ -1,34 +1,65 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  /* MockHire design tokens — one accent, warm neutrals, calm surfaces */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, sans-serif;
+  /* ── MockHire design system ─────────────────────────────────────
+     Two registers, one system:
+     - brand (landing): drenched deep-indigo dark, display type, motion
+     - product (app):   restrained light, Inter, state-driven motion
+     Colors in OKLCH. */
 
-  --color-ink-950: #16161d;
-  --color-ink-900: #1f1f28;
-  --color-ink-700: #3f3f4d;
-  --color-ink-500: #6e6e80;
-  --color-ink-400: #9494a6;
-  --color-ink-200: #dcdce4;
-  --color-ink-100: #ececf1;
-  --color-ink-50: #f6f6f9;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-accent-700: #3730a3;
-  --color-accent-600: #4f46e5;
-  --color-accent-500: #6366f1;
-  --color-accent-100: #e0e7ff;
-  --color-accent-50: #eef2ff;
+  /* Ink scale — neutral with a whisper of indigo (brand hue ~278) */
+  --color-ink-950: oklch(0.17 0.014 278);
+  --color-ink-900: oklch(0.23 0.014 278);
+  --color-ink-700: oklch(0.38 0.012 278);
+  --color-ink-500: oklch(0.55 0.01 278);
+  --color-ink-400: oklch(0.65 0.008 278);
+  --color-ink-300: oklch(0.75 0.007 278);
+  --color-ink-200: oklch(0.87 0.005 278);
+  --color-ink-100: oklch(0.93 0.004 278);
+  --color-ink-50: oklch(0.972 0.003 278);
 
-  --color-ok-600: #059669;
-  --color-ok-100: #d1fae5;
-  --color-warn-600: #d97706;
-  --color-warn-100: #fef3c7;
-  --color-bad-600: #dc2626;
-  --color-bad-100: #fee2e2;
+  /* Accent — electric indigo, the single brand color */
+  --color-accent-700: oklch(0.45 0.21 278);
+  --color-accent-600: oklch(0.54 0.23 278);
+  --color-accent-500: oklch(0.62 0.21 278);
+  --color-accent-400: oklch(0.7 0.17 278);
+  --color-accent-100: oklch(0.93 0.05 278);
+  --color-accent-50: oklch(0.965 0.025 278);
 
-  --shadow-card: 0 1px 2px rgb(22 22 29 / 0.05), 0 4px 16px rgb(22 22 29 / 0.06);
-  --shadow-pop: 0 2px 6px rgb(22 22 29 / 0.08), 0 12px 40px rgb(22 22 29 / 0.14);
+  /* Dark register surfaces (landing + room) */
+  --color-night-950: oklch(0.145 0.025 278);
+  --color-night-900: oklch(0.18 0.03 278);
+  --color-night-800: oklch(0.23 0.035 278);
+
+  /* Semantic states */
+  --color-ok-600: oklch(0.6 0.14 160);
+  --color-ok-400: oklch(0.72 0.15 160);
+  --color-ok-100: oklch(0.94 0.06 160);
+  --color-warn-600: oklch(0.66 0.15 70);
+  --color-warn-100: oklch(0.95 0.06 85);
+  --color-bad-600: oklch(0.55 0.2 25);
+  --color-bad-100: oklch(0.94 0.05 20);
+
+  /* Live signal — the "on air" color, deliberately NOT the accent */
+  --color-live-500: oklch(0.72 0.19 145);
+
+  --shadow-card: 0 1px 2px oklch(0.17 0.014 278 / 0.05), 0 4px 16px oklch(0.17 0.014 278 / 0.06);
+  --shadow-pop: 0 2px 6px oklch(0.17 0.014 278 / 0.08), 0 12px 40px oklch(0.17 0.014 278 / 0.14);
+  --shadow-glow: 0 0 60px oklch(0.54 0.23 278 / 0.35);
+
+  /* Motion vocabulary — exponential ease-outs only */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Semantic z-scale */
+  --z-sticky: 20;
+  --z-backdrop: 40;
+  --z-modal: 50;
+  --z-toast: 60;
 }
 
 html {
@@ -42,8 +73,50 @@ html {
   background: var(--color-accent-100);
 }
 
-/* Focus visibility — keyboard users always see where they are */
 :focus-visible {
   outline: 2px solid var(--color-accent-600);
   outline-offset: 2px;
+}
+
+/* Display type is balanced; long prose avoids orphans */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Skeleton shimmer for product loading states */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-100) 25%,
+    var(--color-ink-50) 50%,
+    var(--color-ink-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Landing grain — one layer of texture over the drench */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

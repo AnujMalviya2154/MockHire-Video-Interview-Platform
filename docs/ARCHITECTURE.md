@@ -282,11 +282,31 @@ components → lib/api.js (single fetch wrapper, credentials:"include",
 Vite dev proxy maps `/api` + `/socket.io` → :5000, so dev is same-origin
 and the cookie flows naturally; the bundle contains no server URLs.
 
-### Design system
-Tailwind v4 `@theme` tokens: ink neutral scale, single indigo accent,
-semantic ok/warn/bad — consumed by ~8 primitives in `components/ui.jsx`
-(Button variants, Input/Field, StatusBadge, Modal with Escape/click-out/
-scroll-lock, Spinner). No component library — deliberate (D4.4).
+### Design system — redesigned in the M4b design pass
+Two visual registers sharing one token system (`index.css` `@theme`, all
+colors OKLCH at hue 278 — see `docs/decisions/M4b-design-pass.md`):
+
+| Register | Where | Character |
+|---|---|---|
+| **Brand** (dark) | Landing, auth brand panel, room | `night-*` surfaces, Bricolage Grotesque display type, glow/grain, entrance motion |
+| **Product** (light) | Dashboard, forms, modals | `ink-*` neutrals, Inter, state-driven motion only |
+
+Supporting tokens: semantic ok/warn/bad states, a dedicated `live-500`
+green ("on air" ≠ accent), two exponential ease-out curves, semantic
+z-scale. Consumed by the primitives in `components/ui.jsx` plus the shared
+`AuthLayout` shell (login/register: brand panel with a live-call vignette
+beside the form). No component library, no new dependencies — deliberate
+(D4.4, D4b.7). All motion is `prefers-reduced-motion` aware.
+
+**Motion vocabulary (D4b.8):** the two registers animate differently.
+Brand surfaces earn *entrance* choreography — the landing hero's word-rise
+with blur settle (GSAP timeline), ScrollTrigger reveals on feature rows,
+magnetic pull on primary CTAs (`gsap.quickTo`, no React state per
+pointer-move), staggered seat-tile entrances in the room lobby and the
+auth panel vignette (`useGSAP` for StrictMode-safe cleanup). Product
+surfaces get *state* motion only: 150–250ms transitions on hover, focus,
+selection and disclosure, and never a page-load sequence. Every tween is
+gated behind `prefers-reduced-motion: reduce`.
 
 ### Security posture in the client
 - Role checks in UI are *presentation only* — server enforces (e.g. the
