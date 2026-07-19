@@ -33,7 +33,7 @@ MockHire is a 1:1 video interview platform. Three cooperating layers:
 │  │                   │  │ - signaling relay  │  │
 │  │ security stack:   │  │ - chat relay       │  │
 │  │ helmet/cors/rate/ │  │ - code-pad sync    │  │
-│  │ sanitize/jwt      │  │   (planned — M3)   │  │
+│  │ sanitize/jwt      │  │                    │  │
 │  └─────────┬─────────┘  └─────────┬──────────┘  │
 │            └───────────┬──────────┘             │
 │                        ▼ Mongoose ODM           │
@@ -65,7 +65,12 @@ video-interview-platform/
 │   ├── SECURITY-CHECKLIST.md   # rules every milestone must satisfy
 │   └── decisions/              # one decision record per milestone
 │       ├── M0-prd-and-scaffold.md
-│       └── M1-backend-foundation.md
+│       ├── M1-backend-foundation.md
+│       ├── M2-interview-api.md
+│       ├── M3-signaling-layer.md
+│       ├── M4-client-foundation.md
+│       ├── M4b-design-pass.md
+│       └── M5-interview-room.md
 ├── server/                     # Express + Socket.IO backend
 │   ├── package.json
 │   ├── .env.example            # documented config (real .env gitignored)
@@ -79,7 +84,14 @@ video-interview-platform/
 │       ├── socket/             # index.js — auth'd signaling, chat, code sync
 │       └── utils/asyncHandler.js
 │   └── tests/                  # integration suites (run against live server)
-└── client/                     # React SPA (planned — M4/M5)
+└── client/                     # React SPA — auth, dashboard, WebRTC room
+    └── src/
+        ├── main.jsx            # routes + guards
+        ├── index.css           # design tokens (@theme, OKLCH)
+        ├── lib/                # api.js, socket.js, rtc.js, time.js, motion.js
+        ├── context/            # AuthContext.jsx
+        ├── components/         # ui.jsx primitives, modals, room/ (tiles, controls, panel)
+        └── pages/              # Landing, Login, Register, Dashboard, InterviewRoom
 ```
 
 ---
@@ -251,9 +263,68 @@ rejection (indistinguishable from missing), relay scoping, chat
 truncation + HTML-as-text, language whitelist, refresh resync, room-less
 event dropping, post-cancellation lockout. Self-cleaning.
 
-## 6. WebRTC call flow *(planned — M5)*
-Offer/answer/ICE sequence diagram, STUN's role, getUserMedia /
-getDisplayMedia, and the renegotiation used for screen share.
+## 6. WebRTC call flow — ✅ built in M5
+
+`client/src/lib/rtc.js` (native RTCPeerConnection, no library) +
+`client/src/pages/InterviewRoom.jsx`. Full decisions in
+`docs/decisions/M5-interview-room.md`.
+
+### The call, end to end
+
+```
+INTERVIEWER (impolite)          SERVER (M3 relay)          CANDIDATE (polite)
+────────────────────            ─────────────────          ──────────────────
+getUserMedia (lobby preview)                               getUserMedia
+"join-room" ──────────────────► authorize vs DB ◄────────── "join-room"
+                                relay only between
+                                the two participants
+        ◄──── "peer-joined" ────┘
+ensurePeer(): addTrack(mic,cam)                            ensurePeer()
+onnegotiationneeded fires
+setLocalDescription()
+{description: offer} ─────────► relay ────────────────────► setRemoteDescription
+                                                           setLocalDescription()
+setRemoteDescription ◄───────── relay ◄─────────────────── {description: answer}
+{candidate: ICE} ◄────────────► relay (both ways, opaque) ◄─► {candidate: ICE}
+        │                                                          │
+        └────────── DTLS-SRTP media, peer-to-peer ────────────────┘
+                    (audio+video never touch the server)
+```
+
+- **STUN, not TURN (D5.3):** one public STUN server discovers each peer's
+  public address; media then flows directly. No relay server in v1 —
+  symmetric-NAT pairs are a documented limitation.
+- **Perfect negotiation (D5.2):** both sides may offer at once (glare) —
+  the *polite* peer (candidate, derived from role) rolls back and answers;
+  the *impolite* peer (interviewer) ignores the colliding offer. Same
+  machinery absorbs every mid-call renegotiation.
+- **Screen share (D5.4):** `getDisplayMedia` grabs the screen, then
+  `RTCRtpSender.replaceTrack()` swaps what the existing video sender
+  transmits — no second track, no second connection. Camera-less
+  participants flip their recvonly video line to sendrecv for the
+  duration. The browser's own "Stop sharing" bar is honored via the
+  track's `onended`.
+- **Presence & mute (D5.5):** mic/cam/share state rides the signal relay
+  as `{meta}` payloads — opaque to the server, authorized like everything
+  else. Mute disables tracks (`enabled=false`), it never stops them, so
+  unmute is instant and needs no renegotiation.
+- **One media lifecycle (D5.6):** the room page owns the stream; lobby
+  preview, peer connection and self-view all share it, and every exit
+  path (leave, unmount, fatal loss) runs the same teardown — stop tracks,
+  destroy peer, drop socket.
+- **Reconnect (D5.7):** a reconnected socket is a stranger to the server,
+  so the client re-runs `join-room` (re-authorization + pad resync) and
+  re-announces meta; terminal loss tears down and fails loudly.
+
+### The room UI (D5.1, D5.8)
+Three phases on one route: **lobby** (device preview + pre-toggles) →
+**live** (peer stage, corner self-view, control bar, chat/code side
+panel) → **ended**. The code pad is deliberately a textarea — sync only
+per FR-5, no editor dependency, no parsing surface (D5.1). Controls are
+keyboard-first (M/V/C shortcuts, suppressed while typing), leave is
+two-press, and every network state renders honestly (waiting /
+connecting / reconnecting / muted badges / "you're presenting").
+
 
 ## 7. Frontend architecture — ✅ foundation built in M4
 
@@ -266,7 +337,8 @@ getDisplayMedia, and the renegotiation used for screen share.
 /login           GuestOnly ─┐  logged-in users bounce to /dashboard
 /register        GuestOnly ─┘  (role picker: candidate | interviewer)
 /dashboard       Protected — upcoming/past lists, schedule/cancel/feedback
-/room/:roomCode  Protected — lobby in M4; WebRTC + chat + editor in M5
+/room/:roomCode  Protected — lobby → live WebRTC room (M5): video, chat,
+                 screen share, shared code pad
 *                → /
 ```
 Guards render nothing until the initial `GET /auth/me` resolves — no
@@ -341,8 +413,10 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Pagination + capped limits + covering indexes | ✅ M2 |
 | Socket handshake auth + room authorization | ✅ M3 |
 | Socket event rate limiting + payload caps | ✅ M3 |
-| React output escaping, no unsafe HTML | ✅ M4 (room UI completes in M5) |
+| React output escaping, no unsafe HTML | ✅ M4 — room UI (chat, code, names) completed in M5 |
 | Client holds no secrets / no token in JS | ✅ M4 |
+| P2P media (DTLS-SRTP), server never sees calls | ✅ M5 |
+| Complete media teardown on every exit path | ✅ M5 |
 
 ---
 
