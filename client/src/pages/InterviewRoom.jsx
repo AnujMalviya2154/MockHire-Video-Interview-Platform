@@ -378,7 +378,16 @@ export default function InterviewRoom() {
   const other = meIsInterviewer ? interview.candidate : interview.interviewer;
 
   if (phase === "ended") {
-    return <Ended title={interview.title} onBack={() => navigate("/dashboard")} />;
+    return (
+      <Ended
+        title={interview.title}
+        interviewer={meIsInterviewer}
+        onFeedback={() =>
+          navigate("/dashboard", { state: { feedbackFor: interview._id } })
+        }
+        onBack={() => navigate("/dashboard")}
+      />
+    );
   }
 
   if (phase === "live") {
@@ -505,7 +514,14 @@ function Lobby({
           )}
 
           <p className="flex items-center gap-2 text-sm text-white/60">
-            {live ? (
+            {interview.status === "completed" ? (
+              <>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 stroke-white/50" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Feedback is already in. The room stays open if you two need it.
+              </>
+            ) : live ? (
               <>
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-live-500 opacity-60" />
@@ -734,7 +750,10 @@ function LiveStage({
 }
 
 // ── Ended ────────────────────────────────────────────────────────────
-function Ended({ title, onBack }) {
+// For interviewers, leaving the room is the moment feedback is freshest,
+// so the primary action here is writing it (routes to the dashboard with
+// the feedback modal pre-opened). Candidates get a quiet exit.
+function Ended({ title, interviewer, onFeedback, onBack }) {
   const ref = useRef(null);
   useGSAP(
     () => {
@@ -760,9 +779,25 @@ function Ended({ title, onBack }) {
           {title} has ended for you. Nothing from the call was stored; the
           room state cleared the moment the last person left.
         </p>
-        <Button variant="light" className="mt-6" onClick={onBack}>
-          Back to dashboard
-        </Button>
+        {interviewer ? (
+          <>
+            <p className="mt-5 text-sm text-white/60">
+              Your read on the candidate is sharpest right now.
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Button variant="ghost-dark" onClick={onBack}>
+                Later
+              </Button>
+              <Button variant="light" onClick={onFeedback}>
+                Write feedback
+              </Button>
+            </div>
+          </>
+        ) : (
+          <Button variant="light" className="mt-6" onClick={onBack}>
+            Back to dashboard
+          </Button>
+        )}
       </div>
     </div>
   );

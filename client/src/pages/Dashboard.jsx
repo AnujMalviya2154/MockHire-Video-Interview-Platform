@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api, ApiError } from "../lib/api";
 import { formatWhen, dateRail, timeOnly, untilLabel, isImminent, useTick } from "../lib/time";
@@ -10,6 +10,7 @@ import FeedbackModal from "../components/FeedbackModal";
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isInterviewer = user?.role === "interviewer";
 
   const [interviews, setInterviews] = useState([]);
@@ -24,8 +25,10 @@ export default function Dashboard() {
     try {
       const d = await api.listInterviews({ limit: 50 });
       setInterviews(d.interviews);
+      return d.interviews;
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load interviews");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -35,12 +38,28 @@ export default function Dashboard() {
     load();
   }, [load]);
 
+  // Arriving from the room's ended screen with { feedbackFor: id }:
+  // open the feedback modal for that interview once the list is in, then
+  // clear the history state so a refresh doesn't re-open it.
+  useEffect(() => {
+    const id = location.state?.feedbackFor;
+    if (!id || loading) return;
+    const iv = interviews.find((i) => i._id === id);
+    if (iv) setFeedbackFor(iv);
+    navigate("/dashboard", { replace: true, state: null });
+  }, [location.state, loading, interviews, navigate]);
+
   const now = Date.now();
   const upcoming = interviews
     .filter((i) => i.status === "scheduled" && new Date(i.scheduledAt).getTime() >= now - 3600e3)
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
   const past = interviews.filter((i) => !upcoming.includes(i));
   const [next, ...laterUpcoming] = upcoming;
+  // Sessions that happened but have no verdict yet — the interviewer's
+  // open debt, surfaced in the greeting so it can't silently pile up.
+  const feedbackDue = isInterviewer
+    ? past.filter((i) => i.status === "scheduled").length
+    : 0;
 
   return (
     <div className="min-h-screen bg-ink-50">
@@ -71,11 +90,13 @@ export default function Dashboard() {
               {greeting()}, {user?.name?.split(" ")[0]}
             </h1>
             <p className="mt-1 text-sm text-ink-500">
-              {upcoming.length === 0
-                ? "Nothing on the calendar."
-                : upcoming.length === 1
-                  ? "One interview coming up."
-                  : `${upcoming.length} interviews coming up.`}
+              {feedbackDue > 0
+                ? `${feedbackDue === 1 ? "One session is" : `${feedbackDue} sessions are`} waiting on your feedback.`
+                : upcoming.length === 0
+                  ? "Nothing on the calendar."
+                  : upcoming.length === 1
+                    ? "One interview coming up."
+                    : `${upcoming.length} interviews coming up.`}
             </p>
           </div>
           {isInterviewer && (
@@ -122,7 +143,6 @@ export default function Dashboard() {
                       me={user}
                       onJoin={() => navigate(`/room/${iv.roomCode}`)}
                       onCancelled={load}
-                      onFeedback={() => setFeedbackFor(iv)}
                     />
                   ))}
                 </Ledger>
@@ -133,7 +153,7 @@ export default function Dashboard() {
               <Section title="Past">
                 <Ledger>
                   {past.map((iv) => (
-                    <LedgerRow key={iv._id} iv={iv} me={user} onFeedback={() => setFeedbackFor(iv)} />
+                    <LedgerRow key={iv._id} iv={iv} me={user} past onFeedback={() => setFeedbackFor(iv)} />
                   ))}
                 </Ledger>
               </Section>
@@ -162,7 +182,7 @@ export default function Dashboard() {
 /* ── pieces ────────────────────────────────────────────────────────── */
 
 function initials(name) {
-  return name?.split(" ").map((w) => w[0]).slice(0, 2).join("") ?? "—";
+  return name?.split(" ").map((w) => w[0]).slice(0, 2).join("") ?? "-";
 }
 
 function greeting() {
@@ -216,7 +236,7 @@ function NextUp({ iv, me, onJoin, onCancelled }) {
           </h2>
           <p className="mt-1.5 text-sm text-white/60">
             {formatWhen(iv.scheduledAt)} · with{" "}
-            <span className="font-medium text-white/90">{other?.name ?? "—"}</span>
+            <span className="font-medium text-white/90">{other?.name ?? "-"}</span>
             <span className="text-white/60"> ({isInterviewer ? "candidate" : "interviewer"})</span>
           </p>
         </div>
@@ -244,19 +264,25 @@ function Ledger({ children }) {
   );
 }
 
-function LedgerRow({ iv, me, onJoin, onCancelled, onFeedback }) {
+function LedgerRow({ iv, me, past = false, onJoin, onCancelled, onFeedback }) {
   const isInterviewer = String(iv.interviewer?._id) === String(me.id);
   const other = isInterviewer ? iv.candidate : iv.interviewer;
   const joinable = iv.status === "scheduled" && onJoin;
-  const canGiveFeedback = isInterviewer && iv.status !== "cancelled" && onFeedback;
   const rail = dateRail(iv.scheduledAt);
   const done = iv.status !== "scheduled";
+
+  // A past row still "scheduled" is a session that happened (or lapsed)
+  // without feedback yet — the interviewer owes a verdict, the candidate
+  // is waiting on one. Both deserve honest copy, not silence.
+  const awaiting = past && iv.status === "scheduled";
+  const canGiveFeedback = isInterviewer && past && iv.status !== "cancelled" && onFeedback;
+  const result = iv.feedback?.result;
 
   return (
     <article className="group flex items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-ink-50/70 sm:px-5">
       <div
         className={`grid w-11 shrink-0 place-items-center rounded-lg py-1.5 leading-none ${
-          done ? "bg-ink-50 text-ink-400" : "bg-accent-50 text-accent-700"
+          done || past ? "bg-ink-50 text-ink-400" : "bg-accent-50 text-accent-700"
         }`}
         aria-hidden
       >
@@ -266,31 +292,44 @@ function LedgerRow({ iv, me, onJoin, onCancelled, onFeedback }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className={`truncate text-sm font-semibold ${done ? "text-ink-700" : "text-ink-900"}`}>
+          <h3 className={`truncate text-sm font-semibold ${done || past ? "text-ink-700" : "text-ink-900"}`}>
             {iv.title}
           </h3>
-          {done && <StatusBadge status={iv.status} />}
-          {iv.status === "completed" && iv.feedback?.result && iv.feedback.result !== "pending" && (
-            <StatusBadge status={iv.feedback.result} />
-          )}
+          {iv.status === "cancelled" && <StatusBadge status="cancelled" />}
+          {iv.status === "completed" &&
+            (result && result !== "pending" ? (
+              <StatusBadge status={result} />
+            ) : (
+              <StatusBadge status="completed" />
+            ))}
+          {awaiting && !isInterviewer && <StatusBadge status="pending" />}
         </div>
         <p className="mt-0.5 truncate text-sm text-ink-500">
-          {timeOnly(iv.scheduledAt)} · {other?.name ?? "—"}
+          {timeOnly(iv.scheduledAt)} · {other?.name ?? "-"}
           <span className="text-ink-400"> · {isInterviewer ? "candidate" : "interviewer"}</span>
+          {awaiting && (
+            <span className="text-ink-400">
+              {" "}· {isInterviewer ? "feedback due" : "awaiting result"}
+            </span>
+          )}
         </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
         {canGiveFeedback && (
-          <Button variant="ghost" className="max-sm:hidden" onClick={onFeedback}>
-            {iv.feedback?.result && iv.feedback.result !== "pending" ? "Edit feedback" : "Feedback"}
+          <Button
+            variant={awaiting ? "secondary" : "ghost"}
+            className="max-sm:hidden"
+            onClick={onFeedback}
+          >
+            {iv.status === "completed" ? "Edit feedback" : "Give feedback"}
           </Button>
         )}
-        {joinable && isInterviewer && <InlineCancel id={iv._id} onCancelled={onCancelled} />}
-        {joinable && (
+        {joinable && !past && isInterviewer && <InlineCancel id={iv._id} onCancelled={onCancelled} />}
+        {joinable && !past && (
           <Button variant="secondary" onClick={onJoin}>Join</Button>
         )}
-        {canGiveFeedback && !joinable && (
+        {canGiveFeedback && (
           <Button variant="ghost" className="sm:hidden" onClick={onFeedback} aria-label="Feedback">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />

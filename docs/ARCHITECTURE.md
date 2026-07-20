@@ -70,7 +70,8 @@ video-interview-platform/
 │       ├── M3-signaling-layer.md
 │       ├── M4-client-foundation.md
 │       ├── M4b-design-pass.md
-│       └── M5-interview-room.md
+│       ├── M5-interview-room.md
+│       └── M6-feedback-workflow.md
 ├── server/                     # Express + Socket.IO backend
 │   ├── package.json
 │   ├── .env.example            # documented config (real .env gitignored)
@@ -325,6 +326,36 @@ keyboard-first (M/V/C shortcuts, suppressed while typing), leave is
 two-press, and every network state renders honestly (waiting /
 connecting / reconnecting / muted badges / "you're presenting").
 
+## 6b. Feedback workflow — ✅ built in M6
+
+The product loop closes client-side on M2's API (zero server changes).
+Full decisions in `docs/decisions/M6-feedback-workflow.md`.
+
+```
+call ends (interviewer leaves)
+   │  ended screen: "Write feedback" primary / "Later" secondary   (D6.1)
+   ▼  navigate("/dashboard", { state: { feedbackFor: id } })
+dashboard loads list ──► opens FeedbackModal for that id, clears state
+   │  rating 1-5 + pass/fail + private comments
+   ▼  PATCH /interviews/:id/feedback  (M2: owning interviewer only)
+status → completed
+   ├─ interviewer row: verdict badge + "Edit feedback"
+   └─ candidate row:   verdict badge only — server ships {result} alone
+                       (shapeForViewer strips rating/comments, M2)
+```
+
+Key facts:
+- **"Unreviewed" is a derived state (D6.2):** the server can't know a
+  call happened (media is P2P), so *past + still `scheduled`* = feedback
+  owed. Greeting shows the debt count; rows read "feedback due"
+  (interviewer) / "awaiting result" + pending badge (candidate).
+- **Offer vs enforce (D6.3):** the UI offers feedback only on past rows;
+  the API accepts it any time after scheduling (rating a no-show is
+  legitimate). Client curates, server validates.
+- **Completed rooms stay open, cancelled rooms don't (D6.4):**
+  cancellation is an enforced "don't meet" (410 + socket lockout);
+  completion just means the verdict is recorded — the lobby says so.
+
 
 ## 7. Frontend architecture — ✅ foundation built in M4
 
@@ -417,6 +448,7 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Client holds no secrets / no token in JS | ✅ M4 |
 | P2P media (DTLS-SRTP), server never sees calls | ✅ M5 |
 | Complete media teardown on every exit path | ✅ M5 |
+| Feedback privacy exercised through the real UI, both roles | ✅ M6 |
 
 ---
 
