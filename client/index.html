@@ -9,6 +9,16 @@
       content="MockHire — a secure real-time video interview platform with live coding, chat, and structured feedback."
     />
     <title>MockHire — Video Interview Platform</title>
+    <script>
+      // Apply a stored theme choice before first paint (no flash).
+      // No stored choice → no data-theme attribute → CSS follows the OS
+      // via prefers-color-scheme. Kept inline and tiny on purpose.
+      try {
+        var t = localStorage.getItem("mh-theme");
+        if (t === "dark" || t === "light")
+          document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

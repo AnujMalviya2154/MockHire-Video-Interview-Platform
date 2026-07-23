@@ -33,7 +33,7 @@ export default function Modal({ title, onClose, children }) {
   return (
     <div
       ref={backdropRef}
-      className="fixed inset-0 z-[var(--z-modal)] grid place-items-center bg-ink-950/45 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[var(--z-modal)] grid place-items-center bg-night-950/50 p-4 backdrop-blur-sm"
       onMouseDown={onClose}
       role="dialog"
       aria-modal="true"
@@ -41,7 +41,7 @@ export default function Modal({ title, onClose, children }) {
     >
       <div
         ref={panelRef}
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[var(--shadow-pop)]"
+        className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-[var(--shadow-pop)]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">

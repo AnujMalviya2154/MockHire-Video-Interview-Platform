@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-import { Logo } from "./ui";
+import { Logo, ThemeToggle } from "./ui";
 
 // Shared shell for login/register: brand panel (dark register) beside
 // the form (product register). Collapses to form-only on small screens.
@@ -108,12 +108,13 @@ export default function AuthLayout({ title, subtitle, alt, children }) {
 
       {/* Form panel */}
       <main className="flex flex-col bg-ink-50 px-6 py-6 lg:px-16">
-        <header className="flex items-center justify-between lg:justify-end">
+        <header className="flex items-center justify-between gap-3 lg:justify-end">
           <span className="lg:hidden"><Logo /></span>
+          <ThemeToggle />
           {alt && (
             <p className="text-sm text-ink-500">
               {alt.text}{" "}
-              <Link to={alt.to} className="font-medium text-accent-600 hover:text-accent-700">
+              <Link to={alt.to} className="font-medium text-accent-strong hover:opacity-80 transition-opacity duration-150">
                 {alt.cta}
               </Link>
             </p>

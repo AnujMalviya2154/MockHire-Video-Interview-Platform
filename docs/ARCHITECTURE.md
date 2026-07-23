@@ -71,7 +71,8 @@ video-interview-platform/
 │       ├── M4-client-foundation.md
 │       ├── M4b-design-pass.md
 │       ├── M5-interview-room.md
-│       └── M6-feedback-workflow.md
+│       ├── M6-feedback-workflow.md
+│       └── M6b-dark-mode.md
 ├── server/                     # Express + Socket.IO backend
 │   ├── package.json
 │   ├── .env.example            # documented config (real .env gitignored)
@@ -392,7 +393,22 @@ colors OKLCH at hue 278 — see `docs/decisions/M4b-design-pass.md`):
 | Register | Where | Character |
 |---|---|---|
 | **Brand** (dark) | Landing, auth brand panel, room | `night-*` surfaces, Bricolage Grotesque display type, glow/grain, entrance motion |
-| **Product** (light) | Dashboard, forms, modals | `ink-*` neutrals, Inter, state-driven motion only |
+| **Product** (light *or dark*) | Dashboard, forms, modals | `ink-*` neutrals, `surface` for raised elements, Inter, state-driven motion only |
+
+**Dark mode (M6b):** a token remap, not a component rewrite. The same
+`@theme` variables are reassigned under `:root[data-theme="dark"]` and
+under `prefers-color-scheme: dark` for users with no explicit choice —
+components keep consuming `bg-surface` / `text-ink-900` / `text-*-strong`
+and those tokens resolve per theme (D6b.1). Only the **product register**
+themes; `night-*`, accent fills and `live-500` are constant, so landing
+and room look identical in both modes (D6b.2). Key supporting tokens: a
+`surface` role split from the page background (white ↔ lifted charcoal,
+D6b.3) and a `*-strong` text-on-tint role split from the `*-500/600`
+fills so status chips keep AA contrast in both modes (D6b.4). The choice
+is applied by a pre-paint inline script in `index.html` (no flash),
+persisted in `localStorage` (never a cookie — the server has no say),
+and defers to the OS until the user toggles (D6b.5). Toggle lives in
+`components/ui.jsx`; logic in `lib/theme.js`.
 
 Supporting tokens: semantic ok/warn/bad states, a dedicated `live-500`
 green ("on air" ≠ accent), two exponential ease-out curves, semantic
@@ -449,6 +465,7 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | P2P media (DTLS-SRTP), server never sees calls | ✅ M5 |
 | Complete media teardown on every exit path | ✅ M5 |
 | Feedback privacy exercised through the real UI, both roles | ✅ M6 |
+| Dark mode: no new deps/secrets, AA contrast both themes | ✅ M6b |
 
 ---
 

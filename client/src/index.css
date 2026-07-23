@@ -11,7 +11,8 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* Ink scale — neutral with a whisper of indigo (brand hue ~278) */
+  /* Ink scale — neutral with a whisper of indigo (brand hue ~278).
+     THEMEABLE: remapped wholesale under [data-theme="dark"] below. */
   --color-ink-950: oklch(0.17 0.014 278);
   --color-ink-900: oklch(0.23 0.014 278);
   --color-ink-700: oklch(0.38 0.012 278);
@@ -22,27 +23,44 @@
   --color-ink-100: oklch(0.93 0.004 278);
   --color-ink-50: oklch(0.972 0.003 278);
 
-  /* Accent — electric indigo, the single brand color */
+  /* Raised product surface (cards, inputs, modals). White in light mode;
+     a lifted night tone in dark. Product register only — brand surfaces
+     keep night-*, which never themes. */
+  --color-surface: oklch(1 0 0);
+
+  /* Accent — electric indigo, the single brand color.
+     -400..-700 are CONSTANT (fills, brand); -50/-100 are tints (themeable). */
   --color-accent-700: oklch(0.45 0.21 278);
   --color-accent-600: oklch(0.54 0.23 278);
   --color-accent-500: oklch(0.62 0.21 278);
   --color-accent-400: oklch(0.7 0.17 278);
   --color-accent-100: oklch(0.93 0.05 278);
   --color-accent-50: oklch(0.965 0.025 278);
+  /* Accent as TEXT on tinted chips/links — themeable (darker than the
+     fill in light mode, lighter in dark) so it always clears AA. */
+  --color-accent-strong: oklch(0.45 0.21 278);
 
-  /* Dark register surfaces (landing + room) */
+  /* Dark register surfaces (landing + room) — never themed */
   --color-night-950: oklch(0.145 0.025 278);
   --color-night-900: oklch(0.18 0.03 278);
   --color-night-800: oklch(0.23 0.035 278);
 
-  /* Semantic states */
+  /* Semantic states. Two roles per hue, kept separate on purpose:
+     -500/-600 are FILLS (buttons, badges' dots, room controls) and stay
+     constant across themes; -strong is TEXT-ON-TINT and lightens in
+     dark so chips keep their contrast. -100 is the tint itself. */
   --color-ok-600: oklch(0.6 0.14 160);
   --color-ok-400: oklch(0.72 0.15 160);
   --color-ok-100: oklch(0.94 0.06 160);
+  --color-ok-strong: oklch(0.6 0.14 160);
   --color-warn-600: oklch(0.66 0.15 70);
+  --color-warn-500: oklch(0.75 0.14 85);
   --color-warn-100: oklch(0.95 0.06 85);
+  --color-warn-strong: oklch(0.62 0.15 70);
   --color-bad-600: oklch(0.55 0.2 25);
+  --color-bad-500: oklch(0.62 0.19 25);
   --color-bad-100: oklch(0.94 0.05 20);
+  --color-bad-strong: oklch(0.55 0.2 25);
 
   /* Live signal — the "on air" color, deliberately NOT the accent */
   --color-live-500: oklch(0.72 0.19 145);
@@ -60,6 +78,76 @@
   --z-backdrop: 40;
   --z-modal: 50;
   --z-toast: 60;
+}
+
+/* ── Dark theme: the product register at night ─────────────────────────
+   One rule set, two entry points: an explicit user choice via
+   [data-theme] wins; otherwise the OS preference applies (html carries
+   no data-theme in that case). Only product tokens remap — the ink
+   scale inverts (same hue, mirrored lightness), tints deepen, text-on-
+   tint lightens. Brand surfaces (night-*, accent fills) are constant,
+   which is why the landing page and room look identical in both modes. */
+:root[data-theme="dark"] {
+  --color-ink-950: oklch(0.96 0.005 278);
+  --color-ink-900: oklch(0.91 0.006 278);
+  --color-ink-700: oklch(0.8 0.008 278);
+  --color-ink-500: oklch(0.66 0.01 278);
+  --color-ink-400: oklch(0.55 0.01 278);
+  --color-ink-300: oklch(0.42 0.012 278);
+  --color-ink-200: oklch(0.33 0.02 278);
+  --color-ink-100: oklch(0.26 0.022 278);
+  --color-ink-50: oklch(0.165 0.02 278);
+
+  --color-surface: oklch(0.215 0.024 278);
+
+  --color-accent-50: oklch(0.26 0.06 278);
+  --color-accent-100: oklch(0.32 0.09 278);
+  --color-accent-strong: oklch(0.78 0.13 278);
+
+  --color-ok-100: oklch(0.3 0.06 160);
+  --color-ok-strong: oklch(0.78 0.14 160);
+  --color-warn-100: oklch(0.3 0.06 80);
+  --color-warn-strong: oklch(0.8 0.13 80);
+  --color-bad-100: oklch(0.29 0.07 20);
+  --color-bad-strong: oklch(0.78 0.13 20);
+
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 16px oklch(0 0 0 / 0.35);
+  --shadow-pop: 0 2px 6px oklch(0 0 0 / 0.4), 0 12px 40px oklch(0 0 0 / 0.55);
+
+  color-scheme: dark;
+}
+
+/* No explicit choice stored → follow the OS. Same values as above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-ink-950: oklch(0.96 0.005 278);
+    --color-ink-900: oklch(0.91 0.006 278);
+    --color-ink-700: oklch(0.8 0.008 278);
+    --color-ink-500: oklch(0.66 0.01 278);
+    --color-ink-400: oklch(0.55 0.01 278);
+    --color-ink-300: oklch(0.42 0.012 278);
+    --color-ink-200: oklch(0.33 0.02 278);
+    --color-ink-100: oklch(0.26 0.022 278);
+    --color-ink-50: oklch(0.165 0.02 278);
+
+    --color-surface: oklch(0.215 0.024 278);
+
+    --color-accent-50: oklch(0.26 0.06 278);
+    --color-accent-100: oklch(0.32 0.09 278);
+    --color-accent-strong: oklch(0.78 0.13 278);
+
+    --color-ok-100: oklch(0.3 0.06 160);
+    --color-ok-strong: oklch(0.78 0.14 160);
+    --color-warn-100: oklch(0.3 0.06 80);
+    --color-warn-strong: oklch(0.8 0.13 80);
+    --color-bad-100: oklch(0.29 0.07 20);
+    --color-bad-strong: oklch(0.78 0.13 20);
+
+    --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 16px oklch(0 0 0 / 0.35);
+    --shadow-pop: 0 2px 6px oklch(0 0 0 / 0.4), 0 12px 40px oklch(0 0 0 / 0.55);
+
+    color-scheme: dark;
+  }
 }
 
 html {

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api, ApiError } from "../lib/api";
 import { formatWhen, dateRail, timeOnly, untilLabel, isImminent, useTick } from "../lib/time";
-import { Logo, Button, StatusBadge, ListSkeleton } from "../components/ui";
+import { Logo, Button, StatusBadge, ListSkeleton, ThemeToggle } from "../components/ui";
 import ScheduleModal from "../components/ScheduleModal";
 import FeedbackModal from "../components/FeedbackModal";
 
@@ -68,7 +68,7 @@ export default function Dashboard() {
           <Logo />
           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-2.5 sm:flex">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-accent-100 text-xs font-semibold text-accent-700">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-accent-100 text-xs font-semibold text-accent-strong">
                 {initials(user?.name)}
               </span>
               <div className="leading-tight">
@@ -76,6 +76,7 @@ export default function Dashboard() {
                 <p className="text-xs capitalize text-ink-500">{user?.role}</p>
               </div>
             </div>
+            <ThemeToggle />
             <Button variant="ghost" onClick={async () => { await logout(); navigate("/login"); }}>
               Sign out
             </Button>
@@ -110,7 +111,7 @@ export default function Dashboard() {
         </div>
 
         {error && (
-          <p role="alert" className="mt-6 rounded-lg bg-bad-100 px-4 py-3 text-sm font-medium text-bad-600">
+          <p role="alert" className="mt-6 rounded-lg bg-bad-100 px-4 py-3 text-sm font-medium text-bad-strong">
             {error}
           </p>
         )}
@@ -258,7 +259,7 @@ function NextUp({ iv, me, onJoin, onCancelled }) {
 // not a wall of identical cards.
 function Ledger({ children }) {
   return (
-    <div className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white shadow-[var(--shadow-card)]">
+    <div className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-card)]">
       {children}
     </div>
   );
@@ -279,10 +280,10 @@ function LedgerRow({ iv, me, past = false, onJoin, onCancelled, onFeedback }) {
   const result = iv.feedback?.result;
 
   return (
-    <article className="group flex items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-ink-50/70 sm:px-5">
+    <article className="group flex items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-ink-100/60 sm:px-5">
       <div
         className={`grid w-11 shrink-0 place-items-center rounded-lg py-1.5 leading-none ${
-          done || past ? "bg-ink-50 text-ink-400" : "bg-accent-50 text-accent-700"
+          done || past ? "bg-ink-100 text-ink-400" : "bg-accent-50 text-accent-strong"
         }`}
         aria-hidden
       >
@@ -379,7 +380,7 @@ function InlineCancel({ id, dark = false, onCancelled }) {
         {busy ? "Cancelling…" : armed ? "Confirm cancel" : "Cancel"}
       </Button>
       {error && (
-        <span role="alert" className="absolute -bottom-6 right-0 whitespace-nowrap text-xs font-medium text-bad-600">
+        <span role="alert" className="absolute -bottom-6 right-0 whitespace-nowrap text-xs font-medium text-bad-strong">
           {error}
         </span>
       )}
@@ -389,7 +390,7 @@ function InlineCancel({ id, dark = false, onCancelled }) {
 
 function EmptyState({ isInterviewer, onSchedule }) {
   return (
-    <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink-200 bg-white/60 py-20 text-center">
+    <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink-200 bg-surface/60 py-20 text-center">
       <div className="max-w-sm px-6">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-accent-50">
           <svg viewBox="0 0 24 24" className="h-6 w-6 stroke-accent-600" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">

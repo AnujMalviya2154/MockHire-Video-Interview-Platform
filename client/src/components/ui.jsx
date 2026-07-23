@@ -4,6 +4,7 @@
 // personality is carried by Bricolage Grotesque on brand surfaces.)
 import { useState, forwardRef } from "react";
 import { Link } from "react-router-dom";
+import { effectiveTheme, toggleTheme } from "../lib/theme";
 
 export function Logo({ dark = false }) {
   return (
@@ -31,7 +32,7 @@ export const Button = forwardRef(function Button(
     primary:
       "bg-accent-600 text-white hover:bg-accent-700 active:scale-[0.98] disabled:bg-ink-200 disabled:text-ink-400 disabled:active:scale-100",
     secondary:
-      "bg-white text-ink-900 ring-1 ring-ink-200 hover:bg-ink-50 active:scale-[0.98] disabled:text-ink-400",
+      "bg-surface text-ink-900 ring-1 ring-ink-200 hover:bg-ink-100 active:scale-[0.98] disabled:text-ink-400",
     danger:
       "bg-bad-600 text-white hover:brightness-110 active:scale-[0.98] disabled:bg-ink-200",
     ghost: "text-ink-700 hover:bg-ink-100 disabled:text-ink-400",
@@ -62,7 +63,7 @@ export function Field({ label, error, children }) {
 export function Input({ className = "", ...props }) {
   return (
     <input
-      className={`w-full rounded-lg border-0 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm ring-1 ring-ink-200 transition-shadow duration-150 placeholder:text-ink-500 hover:ring-ink-300 focus:ring-2 focus:ring-accent-600 disabled:bg-ink-100 disabled:text-ink-400 ${className}`}
+      className={`w-full rounded-lg border-0 bg-surface px-3.5 py-2.5 text-sm text-ink-900 shadow-sm ring-1 ring-ink-200 transition-shadow duration-150 placeholder:text-ink-500 hover:ring-ink-300 focus:ring-2 focus:ring-accent-600 disabled:bg-ink-100 disabled:text-ink-400 ${className}`}
       {...props}
     />
   );
@@ -71,7 +72,7 @@ export function Input({ className = "", ...props }) {
 export function Textarea({ className = "", ...props }) {
   return (
     <textarea
-      className={`w-full resize-none rounded-lg border-0 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm ring-1 ring-ink-200 transition-shadow duration-150 placeholder:text-ink-500 hover:ring-ink-300 focus:ring-2 focus:ring-accent-600 ${className}`}
+      className={`w-full resize-none rounded-lg border-0 bg-surface px-3.5 py-2.5 text-sm text-ink-900 shadow-sm ring-1 ring-ink-200 transition-shadow duration-150 placeholder:text-ink-500 hover:ring-ink-300 focus:ring-2 focus:ring-accent-600 ${className}`}
       {...props}
     />
   );
@@ -111,7 +112,7 @@ export function PasswordInput(props) {
 export function ErrorNote({ children }) {
   if (!children) return null;
   return (
-    <p role="alert" className="rounded-lg bg-bad-100 px-3.5 py-2.5 text-sm font-medium text-bad-600">
+    <p role="alert" className="rounded-lg bg-bad-100 px-3.5 py-2.5 text-sm font-medium text-bad-strong">
       {children}
     </p>
   );
@@ -119,12 +120,12 @@ export function ErrorNote({ children }) {
 
 export function StatusBadge({ status }) {
   const map = {
-    scheduled: "bg-accent-50 text-accent-700",
-    completed: "bg-ok-100 text-ok-600",
+    scheduled: "bg-accent-50 text-accent-strong",
+    completed: "bg-ok-100 text-ok-strong",
     cancelled: "bg-ink-100 text-ink-500",
-    pass: "bg-ok-100 text-ok-600",
-    fail: "bg-bad-100 text-bad-600",
-    pending: "bg-warn-100 text-warn-600",
+    pass: "bg-ok-100 text-ok-strong",
+    fail: "bg-bad-100 text-bad-strong",
+    pending: "bg-warn-100 text-warn-strong",
   };
   return (
     <span
@@ -141,6 +142,35 @@ export function Spinner() {
       aria-label="Loading"
       className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-ink-200 border-t-accent-600"
     />
+  );
+}
+
+// Sun/moon toggle for the product register. State lives on <html> +
+// localStorage (lib/theme.js); this button just reflects and flips it.
+// aria-pressed = "dark is on", one stable accessible name.
+export function ThemeToggle() {
+  const [theme, setTheme] = useState(effectiveTheme);
+  const dark = theme === "dark";
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(toggleTheme())}
+      aria-label="Dark theme"
+      aria-pressed={dark}
+      title={dark ? "Switch to light" : "Switch to dark"}
+      className="grid h-9 w-9 place-items-center rounded-lg text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600"
+    >
+      {dark ? (
+        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M20.4 14.2A8.5 8.5 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6Z" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      )}
+    </button>
   );
 }
 
@@ -163,8 +193,8 @@ export function SegmentedChoice({ options, value, onChange, label }) {
             aria-pressed={active}
             className={`rounded-lg px-3 py-2.5 text-left transition-all duration-150 ease-[var(--ease-out-quart)] ${
               active
-                ? "bg-white shadow-sm ring-1 ring-ink-200/60"
-                : "hover:bg-white/50"
+                ? "bg-surface shadow-sm ring-1 ring-ink-200/60"
+                : "hover:bg-surface/50"
             }`}
           >
             <span className={`block text-sm font-medium ${active ? (o.activeText ?? "text-ink-900") : "text-ink-700"}`}>
@@ -185,7 +215,7 @@ export function SegmentedChoice({ options, value, onChange, label }) {
 // Ledger-row skeletons matching the dashboard's list layout.
 export function ListSkeleton({ rows = 3 }) {
   return (
-    <div className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white shadow-[var(--shadow-card)]">
+    <div className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-card)]">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-4 px-5 py-3.5">
           <div className="skeleton h-11 w-11 rounded-lg" />
