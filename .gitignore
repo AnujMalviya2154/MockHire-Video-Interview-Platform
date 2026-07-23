@@ -22,3 +22,4 @@ Thumbs.db
 
 # AI tooling config (not project source)
 .claude/
+.impeccable/

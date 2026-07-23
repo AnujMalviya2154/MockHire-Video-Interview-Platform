@@ -161,9 +161,15 @@ html {
   background: var(--color-accent-100);
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent-600);
-  outline-offset: 2px;
+/* In @layer base so Tailwind's focus utilities (focus:outline-none,
+   focus-visible:outline-*) can override it — an unlayered rule would beat
+   every layered utility and force one ring on everything. Elements that
+   opt out (the code pad) or ask for a different ring now win as intended. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent-600);
+    outline-offset: 2px;
+  }
 }
 
 /* Display type is balanced; long prose avoids orphans */
