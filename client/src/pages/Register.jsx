@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ApiError } from "../lib/api";
+import { ApiError, NetworkError } from "../lib/api";
 import { Button, Field, Input, ErrorNote, SegmentedChoice, PasswordInput } from "../components/ui";
 import AuthLayout from "../components/AuthLayout";
 
@@ -33,7 +33,11 @@ export default function Register() {
       await register(form);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create account");
+      if (err instanceof NetworkError) {
+        setError("Can't reach the server. Check it's running, then try again.");
+      } else {
+        setError(err instanceof ApiError ? err.message : "Could not create account");
+      }
     } finally {
       setBusy(false);
     }

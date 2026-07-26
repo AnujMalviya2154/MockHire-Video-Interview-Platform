@@ -11,8 +11,6 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   process.exit(1);
 }
 
-await connectDB();
-
 // Socket.IO shares the HTTP server — same port, same cookie context,
 // so the websocket handshake authenticates with the same JWT as REST.
 const server = http.createServer(app);
@@ -34,4 +32,13 @@ server.on("error", (err) => {
 
 server.listen(PORT, () => {
   console.log(`API + signaling listening on http://localhost:${PORT}`);
+
+  // Bind first, connect second. Mongoose dialling Atlas takes several seconds
+  // on a cold start; doing it before listen() meant the port refused every
+  // connection until it finished, so the Vite dev proxy logged
+  // `ECONNREFUSED /api/auth/me` on each client boot. Connecting after the
+  // listener is up costs nothing (no request can be served sooner anyway) and
+  // makes the API reachable — and honest, via the 503 readiness gate — from
+  // the first millisecond.
+  connectDB();
 });

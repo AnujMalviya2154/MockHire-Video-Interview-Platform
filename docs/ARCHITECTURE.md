@@ -100,21 +100,59 @@ video-interview-platform/
 
 ## 3. Backend, layer by layer
 
-### 3.1 Boot sequence (`index.js`)
+### 3.1 Boot sequence (`index.js`) — revised in M6c
 1. Load `.env` (dotenv).
 2. **Refuse to start** if `JWT_SECRET` is missing/short — a weak secret makes every token forgeable, so it's a crash-worthy config error.
-3. Connect to MongoDB (`config/db.js`); exit on failure (fail fast, not half-alive).
-4. Wrap the Express app in `http.createServer` — Socket.IO will attach to this same server in M3, sharing the port *and* the cookie context.
+3. Wrap the Express app in `http.createServer` — Socket.IO attaches to this same server, sharing the port *and* the cookie context.
+4. Handle the server `error` event: `EADDRINUSE` prints an actionable message and exits; anything else re-throws.
+5. **`server.listen(PORT)` — bind first.**
+6. **Connect to MongoDB inside the listen callback** (`config/db.js`), retrying with backoff.
+
+**Why 5 before 6 (M6c, D6c.1):** the original order awaited `connectDB()` at
+module level, so Mongoose dialling Atlas had to finish before the port
+opened — measured at **6.5 seconds** of refused connections on a cold
+start, which is why the Vite dev proxy logged `ECONNREFUSED /api/auth/me`
+on every client boot. Connecting after the listener costs nothing (no
+request could be served sooner either way) and drops bind latency to
+**0.44s**. The tradeoff — a window where the process is up but the DB
+isn't — is handled explicitly by the readiness gate below, not ignored.
+
+**Failure policy (D6c.3):** a missing `MONGO_URI` exits (config error, no
+retry helps). An unreachable host retries with exponential backoff
+(1s → 30s cap) so a transient blip doesn't kill the API and take the
+signalling layer with it. `bufferCommands: false` makes queries against a
+down DB fail fast instead of hanging on Mongoose's buffer timeout.
 
 ### 3.2 Middleware pipeline (`app.js`) — order is deliberate
 ```
 trust proxy (prod) → helmet → CORS(origin allowlist, credentials)
 → rate limit (/api, 300/15min) → express.json(10kb cap)
-→ cookieParser → mongoSanitize → [routes] → 404 → errorHandler
+→ cookieParser → mongoSanitize
+→ /api/health (ungated)
+→ readiness gate (503 on /api/auth, /api/interviews)
+→ [routes] → 404 → errorHandler
 ```
 Reasoning: reject cheap and early. A rate-limited IP never reaches JSON
 parsing; an oversized body never allocates; everything that does get
 through is sanitized before any route logic sees it.
+
+**Readiness contract (D6c.2).** Because the listener now precedes the DB
+connection, DB-backed routes need an honest answer during startup:
+
+| Endpoint | DB connecting | DB connected |
+|---|---|---|
+| `GET /api/health` | `200 {status:"ok", db:"connecting"}` | `200 {status:"ok", db:"connected"}` |
+| `/api/auth/*`, `/api/interviews/*` | `503` + `Retry-After: 2` | normal handling |
+
+`/api/health` deliberately sits **above** the gate — health must answer
+precisely when the DB is down, since that's when someone is asking. It
+reports readiness (`db:`) separately from liveness (`status:`) so an
+orchestrator can distinguish "process alive" from "ready for traffic".
+
+503 is the correct status, not 500: it means "this endpoint is fine, the
+server temporarily can't serve it", and it's the status `Retry-After` is
+defined for. The client retries a 503 automatically (§7) — and *only* a
+503.
 
 ### 3.3 Data models
 
@@ -379,12 +417,31 @@ flash of the wrong page, no client-side auth guessing.
 ### Data flow
 ```
 components → lib/api.js (single fetch wrapper, credentials:"include",
-             ApiError normalization — NO token handling: cookie is
-             httpOnly, invisible to JS by design)
+             ApiError / NetworkError normalization + 503 retry — NO token
+             handling: cookie is httpOnly, invisible to JS by design)
            → AuthContext (mirrors /auth/me; login/register/logout)
 ```
 Vite dev proxy maps `/api` + `/socket.io` → :5000, so dev is same-origin
 and the cookie flows naturally; the bundle contains no server URLs.
+
+**Error taxonomy (M6c, D6c.4).** `lib/api.js` throws two distinct types,
+because "the request never arrived" and "the server said no" are different
+events needing different UI:
+
+| Thrown | When | UI treatment |
+|---|---|---|
+| `NetworkError` | `fetch` rejected (proxy refused, server restarting, offline), or a 5xx with no JSON body | "Can't reach the server. Check it's running, then try again." |
+| `ApiError(status, message)` | a real response with a status | server's message verbatim (e.g. `Invalid credentials`) |
+
+`fetch` only rejects on transport failure — never on a 4xx/5xx — which is
+exactly why the distinction has to be made explicitly.
+
+**Retry policy:** `503` only, at 400/900/1800ms. It's the one status
+expected to clear by itself (the readiness gate during startup, §3.2).
+Retrying a 401/400 just repeats a request the server already judged;
+retrying a 500 risks duplicating a side effect. This is why a cold start
+now resolves silently in `AuthContext`'s bootstrap `/me` instead of
+flashing an error on first paint.
 
 ### Design system — redesigned in the M4b design pass
 Two visual registers sharing one token system (`index.css` `@theme`, all
@@ -466,6 +523,19 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Complete media teardown on every exit path | ✅ M5 |
 | Feedback privacy exercised through the real UI, both roles | ✅ M6 |
 | Dark mode: no new deps/secrets, AA contrast both themes | ✅ M6b |
+| Readiness gate: 503 not 500, no request echo in body | ✅ M6c |
+| Startup logs carry no secret/credential/PII | ✅ M6c |
+| `npm audit --omit=dev` clean | ✅ server (0 vulns) — ⚠️ client: 1 accepted exception, see below |
+
+**Open exception — the only one in the project.** `react-router` has no
+clean published version: advisory ranges `6.0.0–7.17.0` and `7.12.0–8.2.0`
+overlap to cover every release, and the patched 8.3.0 is unpublished. The
+project runs **7.18.1**, whose sole advisory is confined to `unstable_` RSC
+APIs that a client-only `BrowserRouter` SPA cannot invoke — strictly fewer
+*reachable* advisories than 6.30.4, whose open-redirect issue concerns
+`<Link>`/`useNavigate`, APIs this app calls on every navigation. Full
+reachability analysis and revisit trigger: `docs/decisions/M6c-startup-and-readiness.md`
+(D6c.6). **Revisit when 8.3.0 publishes.**
 
 ---
 

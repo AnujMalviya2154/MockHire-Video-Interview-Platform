@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // until the first /me resolves
 
+  // Bootstrap: ask the server who we are. A failure here is not an error
+  // state — "not logged in" and "server not reachable yet" both simply mean
+  // no user, and the route guards send you to /login either way. The 503
+  // readiness retry lives in lib/api, so a cold-starting API resolves here
+  // rather than flashing a spurious error on first paint.
   useEffect(() => {
     let cancelled = false;
     api

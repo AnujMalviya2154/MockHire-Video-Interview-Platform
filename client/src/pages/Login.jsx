@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ApiError } from "../lib/api";
+import { ApiError, NetworkError } from "../lib/api";
 import { Button, Field, Input, ErrorNote, PasswordInput } from "../components/ui";
 import AuthLayout from "../components/AuthLayout";
 
@@ -22,8 +22,14 @@ export default function Login() {
       navigate("/dashboard", { replace: true });
     } catch (err) {
       // Server returns a single generic "Invalid credentials" by design
-      // (anti-enumeration) — we surface it verbatim, no guessing.
-      setError(err instanceof ApiError ? err.message : "Could not sign in");
+      // (anti-enumeration) — we surface it verbatim, no guessing. A transport
+      // failure is a different problem and gets an honest, actionable message
+      // instead of being mislabelled as a credentials error.
+      if (err instanceof NetworkError) {
+        setError("Can't reach the server. Check it's running, then try again.");
+      } else {
+        setError(err instanceof ApiError ? err.message : "Could not sign in");
+      }
     } finally {
       setBusy(false);
     }

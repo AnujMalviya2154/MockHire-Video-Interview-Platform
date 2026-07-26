@@ -9,25 +9,66 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, { method = "GET", body } = {}) {
-  const res = await fetch(`/api${path}`, {
-    method,
-    credentials: "include",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+// The request never reached the API (dev proxy refused, server restarting,
+// browser offline). Distinguished from ApiError because the two need different
+// handling: a NetworkError is worth retrying, a 401 never is.
+export class NetworkError extends Error {
+  constructor(message = "Cannot reach the server") {
+    super(message);
+    this.name = "NetworkError";
+  }
+}
+
+// 503 from the readiness gate means "listening but the database isn't up yet".
+// It is the one status worth retrying automatically: it clears in a second or
+// two on a cold start and would otherwise surface as a spurious error the very
+// first time the app loads.
+const RETRY_STATUS = 503;
+const RETRY_DELAYS_MS = [400, 900, 1800];
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function once(path, { method = "GET", body } = {}) {
+  let res;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // fetch only rejects on transport failure — never on a 4xx/5xx.
+    throw new NetworkError();
+  }
 
   let data = null;
   try {
     data = await res.json();
   } catch {
-    /* empty body (shouldn't happen with this API) */
+    /* empty or non-JSON body — handled below */
   }
 
   if (!res.ok) {
-    throw new ApiError(res.status, data?.message || "Something went wrong");
+    // A body-less 5xx is the dev proxy's signature when the upstream API died
+    // mid-request (e.g. the server restarted). Report it as unreachable rather
+    // than inventing an API error the server never sent.
+    if (res.status >= 500 && data === null) throw new NetworkError();
+    throw new ApiError(res.status, data?.message || `Request failed (${res.status})`);
   }
   return data;
+}
+
+async function request(path, opts = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await once(path, opts);
+    } catch (err) {
+      const retriable = err instanceof ApiError && err.status === RETRY_STATUS;
+      if (!retriable || attempt >= RETRY_DELAYS_MS.length) throw err;
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
 }
 
 export const api = {
