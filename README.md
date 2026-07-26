@@ -1,5 +1,16 @@
 # MockHire — Real-Time Video Interview Platform
 
+![React](https://img.shields.io/badge/React_18-20232A?logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?logo=tailwindcss&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_%E2%89%A5_20-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express_4-000000?logo=express&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO_4-010101?logo=socketdotio&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)
+![WebRTC](https://img.shields.io/badge/WebRTC-P2P-333333?logo=webrtc&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-httpOnly_cookie-fb015b?logo=jsonwebtokens&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-52_passing-brightgreen)
+
 A self-contained platform for conducting technical interviews: schedule an
 interview, meet the candidate over peer-to-peer WebRTC video, evaluate them
 in a live collaborative code editor, and record structured feedback — with
@@ -8,7 +19,7 @@ security treated as a first-class requirement throughout.
 Built with the MERN stack. No paid SDKs, no third-party video services:
 native WebRTC signaled over Socket.IO.
 
-## Features
+## ✨ Features
 
 **Interviewer** — schedule interviews (candidate by email, title, time),
 join over 1:1 video with mic/camera/screen-share controls, chat, co-edit
@@ -23,7 +34,16 @@ never the interviewer's private comments).
 joining is authorized server-side per socket connection against the
 database record. An outsider cannot enter a room even with the full URL.
 
-## Stack
+## 📸 Screenshots
+
+|  |  |
+|---|---|
+| ![Landing page](docs/screenshots/landing.png) | ![Sign in](docs/screenshots/signin.png) |
+| The landing page | Sign in — identity-gated rooms, stated up front |
+| ![Interviewer dashboard](docs/screenshots/dashboard.png) | ![Interview room](docs/screenshots/interview-room.png) |
+| Interviewer dashboard: live, upcoming and completed interviews | The room: 1:1 call with the shared code pad open |
+
+## 🛠 Stack
 
 | Layer | Technology |
 |---|---|
@@ -33,7 +53,7 @@ database record. An outsider cannot enter a room even with the full URL.
 | Video | Native WebRTC (P2P, DTLS-SRTP), signaled over Socket.IO |
 | Auth | JWT in an httpOnly SameSite=Lax cookie, bcrypt-12, token-version revocation |
 
-## Getting started
+## 🚀 Getting started
 
 Prerequisites: **Node.js ≥ 20** and a MongoDB instance (local `mongod` or a
 free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster).
@@ -94,7 +114,7 @@ In production the server also sends a strict Content-Security-Policy
 (computed against the built `index.html` at boot), serves hashed assets
 with immutable caching, and disables request logging.
 
-## Architecture at a glance
+## 🏗 Architecture at a glance
 
 ```
 Browser A  ←──────────── WebRTC media (P2P, encrypted) ───────────→  Browser B
@@ -130,7 +150,7 @@ Full walkthrough: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Every
 milestone's choices — including the alternatives that lost and why — are
 in [`docs/decisions/`](docs/decisions/).
 
-## Security notes
+## 🔐 Security notes
 
 Security requirements were specified in the PRD before the first line of
 code ([`docs/PRD.md`](docs/PRD.md) §4) and tracked against
@@ -159,7 +179,7 @@ advisory is confined to unstable RSC APIs a client-only SPA cannot invoke.
 The reachability analysis and revisit trigger live in
 [`docs/decisions/M6c-startup-and-readiness.md`](docs/decisions/M6c-startup-and-readiness.md).
 
-## Tests
+## 🧪 Tests
 
 ```bash
 cd server
@@ -174,7 +194,7 @@ they delete every document they create), because the things worth testing
 here — cookie flows, socket handshakes, authorization — live in the
 integration layer, not in mocked units.
 
-## Project structure
+## 📁 Project structure
 
 ```
 client/           React app (Vite)
@@ -192,7 +212,7 @@ docs/             PRD, architecture guide, security checklist,
                   per-milestone decision records (M0–M7)
 ```
 
-## Scope notes (v1)
+## 🗒 Scope notes (v1)
 
 Deliberately out of scope: call recording, >2 participants, code
 execution in the editor, email notifications, password reset. Each is
