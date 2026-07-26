@@ -42,7 +42,7 @@ accent + semantic ok/warn/bad) plus ~8 tiny primitives in
 `components/ui.jsx` (Button, Input, Field, Badge, Modal…).
 **Why:** the app has ~6 screens — a full library is more code than the
 app. Design tokens give consistency (every color/shadow has one source of
-truth) and the resume-honest claim "built the design system myself".
+truth) and I understand every line of the design system because I built it.
 Bundle: 264 kB / 90 kB gzip including GSAP and router.
 
 ## D4.5 — GSAP only where motion earns its place

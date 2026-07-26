@@ -1,8 +1,8 @@
 # Decision Record — M0: PRD & Project Scaffold
 
 Every milestone has one of these documents. Format: the decision, the
-alternatives that were on the table, and why this one won. Read these
-top-to-bottom and you can defend every choice in the codebase.
+alternatives that were on the table, and why this one won. I keep these
+so the reasoning behind every choice in the codebase stays on record.
 
 ---
 
@@ -10,7 +10,7 @@ top-to-bottom and you can defend every choice in the codebase.
 
 **Alternatives:** jump straight into coding; follow the tutorial video step-by-step.
 **Decision:** write a full PRD with functional requirements, security requirements, and acceptance criteria first.
-**Why:** a defined scope prevents feature creep (v1 explicitly excludes recording, group calls, code execution), gives measurable "done" criteria, and forces security to be designed in rather than patched on. In interviews, "I wrote requirements before code" separates you from every other tutorial-follower.
+**Why:** a defined scope prevents feature creep (v1 explicitly excludes recording, group calls, code execution), gives measurable "done" criteria, and forces security to be designed in rather than patched on. Writing requirements first also made every later milestone a checklist item instead of a judgment call.
 
 ## D0.2 — Native WebRTC + Socket.IO instead of a video SDK (ZegoCloud / Stream / 100ms)
 
@@ -18,7 +18,7 @@ top-to-bottom and you can defend every choice in the codebase.
 **Decision:** browser-native WebRTC for media, self-hosted Socket.IO for signaling.
 **Why:**
 - No third-party account, API keys, quotas, or vendor lock-in — the project runs forever, free, anywhere.
-- Every layer is explainable: offer/answer, ICE, STUN — you own the whole stack instead of calling a black-box SDK.
+- I wanted to own the whole media path — offer/answer, ICE, STUN — instead of calling a black-box SDK and hoping.
 - Media flows **peer-to-peer**: video never touches our server, which is both a privacy win and a bandwidth win.
 **Trade-off accepted:** without a TURN relay server, calls across very strict NATs/corporate firewalls may fail. Fine for a demo/portfolio project; TURN is a documented v2 item.
 
@@ -26,7 +26,7 @@ top-to-bottom and you can defend every choice in the codebase.
 
 **Alternatives:** Next.js full-stack, Spring Boot + React, Django + React.
 **Decision:** MongoDB + Express + React + Node.
-**Why:** matches the resume claim being backed by this project, matches existing certification (Ethnus MERN) and the two other portfolio projects, and a JS-everywhere stack keeps one language across client, server, and signaling. Socket.IO's natural home is Node.
+**Why:** it's the stack I work in daily — my certification (Ethnus MERN) and my other two projects are MERN — and a JS-everywhere stack keeps one language across client, server, and signaling. Socket.IO's natural home is Node.
 
 ## D0.4 — Monorepo (`client/` + `server/` in one repo)
 

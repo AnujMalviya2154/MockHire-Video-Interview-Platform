@@ -12,7 +12,7 @@ query, an unauthorized document simply doesn't exist as far as that request
 is concerned — there is nothing to forget. This is the single most
 important pattern in this API.
 
-**Interview one-liner:** "I put authorization into the database query
+**In short:** "I put authorization into the database query
 itself, so an IDOR bug is structurally impossible rather than something a
 code review has to catch."
 

@@ -79,6 +79,21 @@ client and API are same-origin and the auth cookie flows without any
 cross-origin setup. The client needs no environment variables and the
 bundle contains no server URLs.
 
+**Production** is a single origin: build the client and the server serves
+it — static assets, SPA deep links, REST, and websockets all on one port,
+which is what keeps the `SameSite=Lax` cookie effective.
+
+```bash
+cd client && npm run build     # outputs client/dist
+cd ../server
+NODE_ENV=production node src/index.js
+# app + API on http://localhost:5000
+```
+
+In production the server also sends a strict Content-Security-Policy
+(computed against the built `index.html` at boot), serves hashed assets
+with immutable caching, and disables request logging.
+
 ## Architecture at a glance
 
 ```
@@ -133,7 +148,7 @@ milestone. Highlights:
 | Room gate-crashing | 128-bit random codes; socket-level DB authorization per join |
 | IDOR | Every interview query scoped to the authenticated user; role checks server-side |
 | XSS via chat/code | Length caps + React text-node rendering; no `dangerouslySetInnerHTML` anywhere |
-| Header attacks | Helmet (CSP, X-Frame-Options, nosniff), `x-powered-by` removed |
+| Header attacks | Helmet with a strict CSP in production (inline theme script allowed by hash only), `frame-ancestors 'none'`, nosniff, `x-powered-by` removed |
 | Secret leakage | Secrets only via `.env` (gitignored from first commit); `.env.example` documents keys |
 | Socket abuse | Handshake auth, per-event rate limiting (30 events/s), payload caps |
 
@@ -174,7 +189,7 @@ server/           Express + Socket.IO
   src/middleware/ auth guard, error handler
   tests/          integration suites
 docs/             PRD, architecture guide, security checklist,
-                  per-milestone decision records (M0–M6c)
+                  per-milestone decision records (M0–M7)
 ```
 
 ## Scope notes (v1)

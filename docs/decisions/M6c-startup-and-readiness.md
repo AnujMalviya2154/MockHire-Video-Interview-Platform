@@ -51,7 +51,7 @@ being conflated with liveness of the *process*.
 together, probes at t+1s…t+6s all returned clean `401`s, and the Vite
 terminal logged **zero** proxy errors.
 
-**Interview one-liner:** "Liveness and readiness are different questions.
+**In short:** "Liveness and readiness are different questions.
 Awaiting the DB before `listen()` answers both with a refused socket,
 which is the one answer that carries no information."
 
@@ -87,7 +87,7 @@ process look dead during a recoverable DB blip.
 {"status":"ok","db":"connecting"}` while `/api/auth/me` → `503` with
 `Retry-After: 2` and no hang.
 
-**Interview one-liner:** "The readiness gate is what makes
+**In short:** "The readiness gate is what makes
 bind-before-connect honest. Without it you've traded a refused connection
 for a confusing 500."
 
@@ -111,7 +111,7 @@ interacts badly with a readiness gate: a request that slips through would
 hang instead of failing. Failing fast lets the gate turn "DB not ready"
 into a clean 503.
 
-**Interview one-liner:** "Exit on errors that retrying cannot fix; retry
+**In short:** "Exit on errors that retrying cannot fix; retry
 the ones it can. Missing config is the former, an unreachable host is the
 latter."
 
@@ -140,7 +140,7 @@ actionable copy: "Can't reach the server. Check it's running, then try
 again." Mislabelling an unreachable server as a credentials problem sends
 the user to reset a password that was never wrong.
 
-**Interview one-liner:** "`fetch` only rejects on transport failure, never
+**In short:** "`fetch` only rejects on transport failure, never
 on a 4xx or 5xx — so 'the request failed' and 'the server said no' are
 genuinely different events and deserve different error types."
 
@@ -177,7 +177,7 @@ degrade honestly — a mid-request restart now reports "can't reach the
 server" instead of a misleading error — and the discipline of disproving
 a plausible hypothesis before shipping a fix for it is the actual lesson.
 
-**Interview one-liner:** "My best hypothesis was wrong and five
+**In short:** "My best hypothesis was wrong and five
 experiments said so. The log timestamps showed the server restarting
 mid-request, and the restarts were my own file saves — `--watch` doing
 exactly its job."
@@ -232,7 +232,7 @@ that: `Link` navigation, the `PublicOnly` `<Navigate>` guard, logout via
 **Revisit when:** `react-router` 8.3.0 publishes — then upgrade and the
 audit goes clean with no reachability argument required.
 
-**Interview one-liner:** "Every published version of the dependency was in
+**In short:** "Every published version of the dependency was in
 some advisory range, so I couldn't patch my way out. I picked the version
 whose only advisory was structurally unreachable for a client-side SPA,
 documented why, and left a revisit trigger — severity labels rank

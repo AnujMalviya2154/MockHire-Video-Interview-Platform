@@ -25,7 +25,7 @@ styled like a landing page is exhausting; a landing page styled like a
 dashboard is forgettable. Keeping both registers in *one* token system
 (same hue 278 underlies both) makes them feel like one product.
 
-**Interview one-liner:** "The landing page persuades, the dashboard works
+**In short:** "The landing page persuades, the dashboard works
 — two visual registers sharing one OKLCH hue so the product still feels
 whole."
 
@@ -42,7 +42,7 @@ steps, so `ink-500` vs `ink-400` differ by the amount the eye *perceives*,
 not by what hex math says. This is also why the neutrals can carry a
 "whisper" of indigo (chroma 0.003–0.014) without ever looking purple.
 
-**Interview one-liner:** "No hex codes in components — a single `@theme`
+**In short:** "No hex codes in components — a single `@theme`
 block in OKLCH is the source of truth for every surface."
 
 ## D4b.3 — Typeface pairing: Bricolage Grotesque + Inter
@@ -94,9 +94,10 @@ support is an accessibility requirement, not garnish.
 component library, no animation library beyond what M4 already had, fonts
 via Google Fonts CSS import.
 
-**Why:** Every dependency is attack surface, audit surface, and interview
-surface. The design system is ~130 lines of tokens plus the existing
-primitives file — all of it explainable line by line.
+**Why:** Every dependency is attack surface, audit surface, and
+maintenance surface. The design system is ~130 lines of tokens plus the
+existing primitives file — small enough that I know exactly what every
+line does.
 
 ## D4b.8 — GSAP choreography is scoped to brand surfaces
 

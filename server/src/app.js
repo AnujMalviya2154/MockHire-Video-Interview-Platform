@@ -1,3 +1,7 @@
+import path from "path";
+import fs from "fs";
+import crypto from "crypto";
+import { fileURLToPath } from "url";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -12,6 +16,25 @@ import { isDbReady } from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+const isProd = process.env.NODE_ENV === "production";
+
+// In production this one Express server also serves the built client —
+// same origin as the API, so the SameSite=Lax auth cookie works with zero
+// CORS friction (a split static host would silently break cookie auth).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(__dirname, "../../client/dist");
+const clientIndexHtml = path.join(clientDist, "index.html");
+
+// CSP allows inline scripts by hash only. The client's index.html carries one
+// tiny inline script (pre-paint theme choice), so hash whatever the built HTML
+// actually contains at boot — edits to that script can never desync the policy.
+let inlineScriptHashes = [];
+if (isProd && fs.existsSync(clientIndexHtml)) {
+  const html = fs.readFileSync(clientIndexHtml, "utf8");
+  inlineScriptHashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+    (m) => `'sha256-${crypto.createHash("sha256").update(m[1]).digest("base64")}'`
+  );
+}
 
 // Behind a reverse proxy (Render/Railway/nginx) in production: needed so
 // rate limiting sees real client IPs and secure cookies work over TLS.
@@ -21,7 +44,32 @@ if (process.env.NODE_ENV === "production") {
 app.disable("x-powered-by");
 
 // ── Security middleware (order matters) ─────────────────────────────
-app.use(helmet()); // secure HTTP headers: CSP, X-Frame-Options, nosniff, HSTS…
+// helmet defaults plus an explicit CSP. The CSP must account for what the
+// client actually loads: self-hosted JS/CSS, Google Fonts (stylesheet +
+// font files), the hashed inline theme script, and websocket upgrades to
+// this same origin. In development the client is served by Vite (which CSP
+// here can't govern), so the policy only applies in production.
+app.use(
+  helmet({
+    contentSecurityPolicy: isProd
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", ...inlineScriptHashes],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:"],
+            connectSrc: ["'self'", "wss:"],
+            mediaSrc: ["'self'", "blob:"], // WebRTC video elements use blob/MediaStream
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+          },
+        }
+      : false,
+  })
+);
 
 app.use(
   cors({
@@ -70,6 +118,28 @@ app.use(["/api/auth", "/api/interviews"], (req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/interviews", interviewRoutes);
+
+// ── Static client (production only) ─────────────────────────────────
+// Serve the built SPA from the same origin as the API. Hashed assets are
+// immutable-cacheable forever; index.html is never cached so a new deploy
+// takes effect on the next load. Unknown non-API paths fall through to
+// index.html — the client router owns them (deep links like /room/:code).
+if (isProd && fs.existsSync(clientIndexHtml)) {
+  app.use(
+    express.static(clientDist, {
+      index: false,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    })
+  );
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(clientIndexHtml);
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);

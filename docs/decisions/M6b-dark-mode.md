@@ -31,7 +31,7 @@ principled — the dark ink scale is the light scale's lightness mirrored
 at the same hue 278, so the whisper-of-indigo neutral identity survives
 into dark instead of going flat grey.
 
-**Interview one-liner:** "No `dark:` classes anywhere — components consume
+**In short:** "No `dark:` classes anywhere — components consume
 semantic tokens, and dark mode is one block that remaps those tokens, so
 a component literally cannot be styled correctly in one theme and wrong
 in the other."
@@ -52,7 +52,7 @@ mid-call would be a distraction during the one task that matters. Scoping
 the theme to the product register is the honest reading of what dark mode
 is *for*: the app you stare at, not the marketing you glance at.
 
-**Interview one-liner:** "The landing page and room are dark in both
+**In short:** "The landing page and room are dark in both
 themes because they were always brand-dark; dark mode only touches the
 product register, which is the only place a light/dark choice means
 anything."
@@ -71,7 +71,7 @@ barely reads on a dark page; elevation has to come from the surface being
 the page" — captures that intent and resolves to the right physical color
 per theme. `bg-white` couldn't; it means one specific color.
 
-**Interview one-liner:** "`bg-white` is a color; `bg-surface` is a role —
+**In short:** "`bg-white` is a color; `bg-surface` is a role —
 'raised above the page' — and only a role can be white in light mode and
 a lifted charcoal in dark."
 
@@ -90,7 +90,7 @@ text-on-tint lets each move independently — the pass/fail badge stays
 legible in both modes, and the Pass button fill stays the same brand
 green everywhere.
 
-**Interview one-liner:** "One green can't be both a button fill and
+**In short:** "One green can't be both a button fill and
 readable text on a green chip across two themes, so the system separates
 'fill' from 'text-on-tint' and only the latter themes."
 
@@ -115,7 +115,7 @@ client-only means zero new request weight and nothing to handle in Express.
 Respecting `prefers-color-scheme` when the user hasn't chosen is the
 accessible default; an explicit toggle then wins and sticks.
 
-**Interview one-liner:** "The theme is applied by a five-line inline
+**In short:** "The theme is applied by a five-line inline
 script before paint so there's no flash, stored in localStorage because
 the server has no reason to know, and it defers to the OS until the user
 decides otherwise."

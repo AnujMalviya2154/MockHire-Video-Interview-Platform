@@ -37,7 +37,7 @@ reasoning, and the UI says so in those words. Router history state is the
 right transport because it's invisible in the URL, dies with the
 navigation, and needs no new API surface.
 
-**Interview one-liner:** "Feedback is asked for when the interviewer's
+**In short:** "Feedback is asked for when the interviewer's
 memory is best — a router-state handoff opens the modal exactly once,
 with no query param to haunt the URL."
 
@@ -61,7 +61,7 @@ owed*. Both roles get honest copy for the same underlying fact, shaped by
 what each can do about it — the interviewer can act, the candidate can
 only wait, and the pending badge tells them the system hasn't lost them.
 
-**Interview one-liner:** "There's no 'unreviewed' status in the DB
+**In short:** "There's no 'unreviewed' status in the DB
 because the server can't see calls happen — the client derives it from
 *past + scheduled*, and shows each role what that fact means for them."
 
@@ -79,7 +79,7 @@ server stays permissive — a deliberate policy gap between what's *valid*
 and what's *sensible to offer*). Client offers the sensible; server
 enforces the valid.
 
-**Interview one-liner:** "The server accepts feedback any time after
+**In short:** "The server accepts feedback any time after
 scheduling because rating a no-show is legitimate; the UI only offers it
 once the slot is in the past — policy lives client-side, enforcement
 server-side."
@@ -99,7 +99,7 @@ and there's no security reason to lock two authorized people out of
 their own room. Blocking it would add a server rule solely to remove
 product value.
 
-**Interview one-liner:** "Cancelled means someone said don't meet — the
+**In short:** "Cancelled means someone said don't meet — the
 server enforces that. Completed means the paperwork's done — that's no
 reason to lock the door between the same two people."
 

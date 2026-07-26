@@ -125,16 +125,28 @@ down DB fail fast instead of hanging on Mongoose's buffer timeout.
 
 ### 3.2 Middleware pipeline (`app.js`) — order is deliberate
 ```
-trust proxy (prod) → helmet → CORS(origin allowlist, credentials)
+trust proxy (prod) → helmet (+ strict CSP in prod) → CORS(origin allowlist, credentials)
 → rate limit (/api, 300/15min) → express.json(10kb cap)
 → cookieParser → mongoSanitize
 → /api/health (ungated)
 → readiness gate (503 on /api/auth, /api/interviews)
-→ [routes] → 404 → errorHandler
+→ [routes] → static client + SPA fallback (prod) → 404 → errorHandler
 ```
 Reasoning: reject cheap and early. A rate-limited IP never reaches JSON
 parsing; an oversized body never allocates; everything that does get
 through is sanitized before any route logic sees it.
+
+**Production serving (D7.4).** With `NODE_ENV=production`, the same
+Express server serves `client/dist`: hashed assets get
+`Cache-Control: immutable` (a year), `index.html` gets `no-cache`, and
+any unknown non-`/api` path falls through to `index.html` so the client
+router owns deep links (`/room/:code`). Unknown `/api` paths still 404
+as JSON. One origin means the `SameSite=Lax` cookie keeps doing CSRF
+work in production exactly as in dev — split hosting would force
+`SameSite=None` and CORS loosening. The production CSP is computed at
+boot: the server hashes the inline scripts actually present in the built
+`index.html` (there is exactly one — the pre-paint theme snippet), so
+editing that script can never silently break the policy or vice versa.
 
 **Readiness contract (D6c.2).** Because the listener now precedes the DB
 connection, DB-backed routes need an honest answer during startup:
@@ -193,7 +205,7 @@ Set-Cookie: iv_token=…;                 payload.ver === user.tokenVersion?
   Secure(prod)                          req.user = user   401 (revoked)
 ```
 
-Design points you should be able to explain:
+Design points worth calling out:
 - **httpOnly cookie** ⇒ JS can't read the token ⇒ XSS can't steal it. The CSRF exposure this creates is countered by SameSite=Lax + strict CORS.
 - **No role in the JWT** — role is read fresh from the DB every request; client-held claims are never trusted for authorization.
 - **tokenVersion** — logout is *real* revocation, not just deleting the client's copy.
@@ -283,7 +295,7 @@ ICE to peer (≤1000 chars,   (≤50kb, drop   (js/py/java/
                  their last socket closes; last-one-out deletes room state
 ```
 
-### Design facts to internalize
+### Load-bearing design facts
 - **One auth path:** the socket handshake uses the *same* verify function
   as REST (incl. tokenVersion revocation) — a logout kills sockets' auth too.
 - **Two gates, not one:** unguessable room code (possession) AND DB-checked
@@ -525,6 +537,7 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Dark mode: no new deps/secrets, AA contrast both themes | ✅ M6b |
 | Readiness gate: 503 not 500, no request echo in body | ✅ M6c |
 | Startup logs carry no secret/credential/PII | ✅ M6c |
+| Prod: single-origin static serving, strict CSP (hash-pinned inline script), immutable asset caching | ✅ M7 |
 | `npm audit --omit=dev` clean | ✅ server (0 vulns) — ⚠️ client: 1 accepted exception, see below |
 
 **Open exception — the only one in the project.** `react-router` has no
@@ -539,10 +552,10 @@ reachability analysis and revisit trigger: `docs/decisions/M6c-startup-and-readi
 
 ---
 
-## 9. Study path (read in this order when the project is done)
+## 9. Reading order (for anyone new to the codebase)
 
 1. `docs/PRD.md` — what was built and why those requirements.
 2. This file §1–3 — the system shape and the backend.
 3. `docs/decisions/M0…M7` — every choice + the alternative that lost.
 4. Code order: `index.js` → `app.js` → `models/` → `middleware/auth.js` → `routes/` → `socket/` → client `main.jsx` → room component.
-5. `docs/SECURITY-CHECKLIST.md` — then re-read §8 above and check you can explain every row.
+5. `docs/SECURITY-CHECKLIST.md` — then re-read §8 above; every row maps to code.

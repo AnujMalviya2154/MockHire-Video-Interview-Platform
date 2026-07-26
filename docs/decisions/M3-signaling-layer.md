@@ -21,7 +21,7 @@ The socket then carries a server-verified `socket.user` for its lifetime.
 Client-sent identity is never trusted — checklist rule. Rejecting at
 handshake also costs attackers a connection attempt, not a per-event check.
 
-**Interview one-liner:** "REST and websockets authenticate through the
+**In short:** "REST and websockets authenticate through the
 same function, so a revoked token dies everywhere at once."
 
 ## D3.3 — Room join re-authorized against the database

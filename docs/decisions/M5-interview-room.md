@@ -32,7 +32,7 @@ audit — and the "server treats code as opaque text" security story stays
 literally true in the UI too. The character counter mirrors the server's
 50 kB cap so the user sees the same limit the server enforces.
 
-**Interview one-liner:** "The pad is a textarea on purpose: the
+**In short:** "The pad is a textarea on purpose: the
 requirement was synchronized text, and every editor library would have
 added attack surface to decorate content the server refuses to interpret."
 
@@ -55,7 +55,7 @@ own is outstanding; the polite side rolls back and answers. Deriving
 politeness from role means zero extra protocol: both clients already know
 both roles from the interview record.
 
-**Interview one-liner:** "Offer glare resolves with zero extra signaling
+**In short:** "Offer glare resolves with zero extra signaling
 because politeness is a function of data both peers already have — the
 role on the interview record."
 
@@ -72,7 +72,7 @@ LAN) direct or STUN-assisted paths always succeed. Pairs of symmetric
 NATs would need TURN; that's listed as future work, not silently broken:
 the room shows an honest "Reconnecting" state if the path dies.
 
-**Interview one-liner:** "STUN discovers the path, TURN pays for a
+**In short:** "STUN discovers the path, TURN pays for a
 detour; v1 needs discovery, not detours — documented, not discovered in
 production."
 
@@ -97,7 +97,7 @@ absorbs it. The browser's own "Stop sharing" bar is also handled — the
 track's `onended` restores the camera so UI state can't drift from
 transmission state.
 
-**Interview one-liner:** "Screen share is not a second call — it's the
+**In short:** "Screen share is not a second call — it's the
 same video sender transmitting a different track, which is one
 `replaceTrack` instead of a renegotiation dance."
 
@@ -120,7 +120,7 @@ and rate limit. Mute keeps tracks alive but disabled
 message lets the far side render an honest muted badge instead of a
 frozen frame. Server diff for all of M5: zero lines.
 
-**Interview one-liner:** "The server relays opaque bytes between two
+**In short:** "The server relays opaque bytes between two
 authorized people; whether those bytes are an SDP offer or 'my mic is
 off' is none of its business."
 
@@ -141,7 +141,7 @@ disconnect socket — nothing else ever holds media. Denied permissions
 degrade instead of blocking: you can still join, watch, and chat
 (recvonly transceivers), matching the lobby's honest warning copy.
 
-**Interview one-liner:** "Whoever owns the stream owns the leak — so
+**In short:** "Whoever owns the stream owns the leak — so
 exactly one component owns it, and every exit path runs the same three
 teardown lines."
 
@@ -159,7 +159,7 @@ a network blip would silently vanish. And a call that can't come back
 should say so, not leave a frozen frame pretending: fail loudly, clean up
 media (the camera light goes off), offer the dashboard.
 
-**Interview one-liner:** "A reconnected socket is a new identity to the
+**In short:** "A reconnected socket is a new identity to the
 server — the client re-proves room membership on every reconnect, and if
 it can't, the room says so instead of freezing."
 

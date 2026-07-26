@@ -20,6 +20,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# AI tooling config (not project source)
+# Local editor/assistant tooling (not project source)
 .claude/
 .impeccable/
+
+# Personal notes
+INTERVIEW-NOTES.md

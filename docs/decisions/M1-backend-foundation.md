@@ -9,7 +9,7 @@
 - vs server sessions: JWT keeps the API stateless (horizontal scaling without a shared session store) while the cookie transport gives session-grade browser security.
 **Trade-off accepted:** cookies introduce CSRF risk — mitigated by `SameSite=Lax` plus CORS locked to the exact client origin with credentials.
 
-**Interview one-liner:** "I store the JWT in an httpOnly cookie so XSS can't exfiltrate it, and I handle the resulting CSRF exposure with SameSite and a strict CORS allowlist."
+**In short:** "I store the JWT in an httpOnly cookie so XSS can't exfiltrate it, and I handle the resulting CSRF exposure with SameSite and a strict CORS allowlist."
 
 ## D1.2 — Real logout revocation via `tokenVersion`
 

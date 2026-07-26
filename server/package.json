@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/index.js",
+    "start:prod": "node -e \"process.env.NODE_ENV='production'; import('./src/index.js')\"",
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
