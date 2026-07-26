@@ -1,20 +1,25 @@
-# MockHire — Real-Time Video Interview Platform
+<div align="center">
 
-![React](https://img.shields.io/badge/React_18-20232A?logo=react&logoColor=61DAFB)
-![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?logo=tailwindcss&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js_%E2%89%A5_20-339933?logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express_4-000000?logo=express&logoColor=white)
-![Socket.IO](https://img.shields.io/badge/Socket.IO_4-010101?logo=socketdotio&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)
-![WebRTC](https://img.shields.io/badge/WebRTC-P2P-333333?logo=webrtc&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-httpOnly_cookie-fb015b?logo=jsonwebtokens&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-52_passing-brightgreen)
+# 🎥 MockHire
+
+### Real-Time Video Interview Platform
 
 A self-contained platform for conducting technical interviews: schedule an
 interview, meet the candidate over peer-to-peer WebRTC video, evaluate them
 in a live collaborative code editor, and record structured feedback — with
 security treated as a first-class requirement throughout.
+
+<img src="https://img.shields.io/badge/React-18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 18" />
+<img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js + Express" />
+<img src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+<img src="https://img.shields.io/badge/Socket.IO-Signaling-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.IO" />
+
+<img src="https://img.shields.io/badge/WebRTC-P2P_Video-333333?style=for-the-badge&logo=webrtc&logoColor=white" alt="WebRTC" />
+<img src="https://img.shields.io/badge/JWT-Authentication-fb015b?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
+<img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
+<img src="https://img.shields.io/badge/Tests-52_passing-brightgreen?style=for-the-badge" alt="52 tests passing" />
+
+</div>
 
 Built with the MERN stack. No paid SDKs, no third-party video services:
 native WebRTC signaled over Socket.IO.
