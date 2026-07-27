@@ -352,7 +352,11 @@ setRemoteDescription ◄───────── relay ◄──────�
 - **Perfect negotiation (D5.2):** both sides may offer at once (glare) —
   the *polite* peer (candidate, derived from role) rolls back and answers;
   the *impolite* peer (interviewer) ignores the colliding offer. Same
-  machinery absorbs every mid-call renegotiation.
+  machinery absorbs every mid-call renegotiation. 
+  *(M9 Update: To bypass implicit rollback bugs on certain mobile browsers, 
+  the polite peer now defers peer creation until it receives the impolite 
+  peer's offer, avoiding the initial collision entirely while preventing 
+  infinite signal ping-pong loops).*
 - **Screen share (D5.4):** `getDisplayMedia` grabs the screen, then
   `RTCRtpSender.replaceTrack()` swaps what the existing video sender
   transmits — no second track, no second connection. Camera-less
