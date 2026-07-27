@@ -72,7 +72,10 @@ video-interview-platform/
 │       ├── M4b-design-pass.md
 │       ├── M5-interview-room.md
 │       ├── M6-feedback-workflow.md
-│       └── M6b-dark-mode.md
+│       ├── M6b-dark-mode.md
+│       ├── M6c-startup-and-readiness.md
+│       ├── M7-docs-and-verification.md
+│       └── M8-first-login-investigation.md
 ├── server/                     # Express + Socket.IO backend
 │   ├── package.json
 │   ├── .env.example            # documented config (real .env gitignored)
@@ -556,6 +559,6 @@ reachability analysis and revisit trigger: `docs/decisions/M6c-startup-and-readi
 
 1. `docs/PRD.md` — what was built and why those requirements.
 2. This file §1–3 — the system shape and the backend.
-3. `docs/decisions/M0…M7` — every choice + the alternative that lost.
+3. `docs/decisions/M0…M8` — every choice + the alternative that lost.
 4. Code order: `index.js` → `app.js` → `models/` → `middleware/auth.js` → `routes/` → `socket/` → client `main.jsx` → room component.
 5. `docs/SECURITY-CHECKLIST.md` — then re-read §8 above; every row maps to code.
