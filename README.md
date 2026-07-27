@@ -19,6 +19,9 @@ security treated as a first-class requirement throughout.
 <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
 <img src="https://img.shields.io/badge/Tests-52_passing-brightgreen?style=for-the-badge" alt="52 tests passing" />
 
+<br/>
+<a href="https://mockhire-1xn2.onrender.com" target="_blank"><img src="https://img.shields.io/badge/Live_Deployment-mockhire--1xn2.onrender.com-blue?style=for-the-badge&logo=render" alt="Live Deployment" /></a>
+
 </div>
 
 Built with the MERN stack. No paid SDKs, no third-party video services:
