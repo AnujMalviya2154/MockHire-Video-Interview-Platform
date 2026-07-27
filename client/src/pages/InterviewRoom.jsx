@@ -63,6 +63,7 @@ export default function InterviewRoom() {
   const camOnRef = useRef(camOn);
   const sharingRef = useRef(sharing);
   const phaseRef = useRef(phase);
+  const metaRepliedRef = useRef(false);
   micOnRef.current = micOn;
   camOnRef.current = camOn;
   sharingRef.current = sharing;
@@ -222,11 +223,16 @@ export default function InterviewRoom() {
           // flow with no collision.
           if (!peerRef.current) {
             console.log("[ROOM-DIAG] meta received but deferring peer creation (waiting for offer)", { ts: Date.now() });
-            sendMeta();
+            if (!metaRepliedRef.current) {
+              metaRepliedRef.current = true;
+              sendMeta();
+            }
           }
           return;
         }
         if (payload.description || payload.candidate) {
+          // If we deferred peer creation, the offer has arrived. Reset the meta replied flag.
+          metaRepliedRef.current = false;
           console.log("[ROOM-DIAG] signal RECEIVED signaling", {
             hasDescription: !!payload.description,
             descType: payload.description?.type,
