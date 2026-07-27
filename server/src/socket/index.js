@@ -45,6 +45,7 @@ export function attachSocket(httpServer) {
   });
 
   io.on("connection", (socket) => {
+    console.log(`[SIG-DIAG] connection`, { socketId: socket.id, userId: socket.user.id, name: socket.user.name, ts: new Date().toISOString() });
     // Naive token-bucket rate limit for everything this socket emits
     let budget = EVENTS_PER_SEC;
     const refill = setInterval(() => (budget = EVENTS_PER_SEC), 1000);
@@ -84,12 +85,25 @@ export function attachSocket(httpServer) {
         joinedRoom = roomCode;
         state.participants.add(socket.user.id);
 
+        const roomSockets = io.sockets.adapter.rooms.get(roomCode);
+        console.log(`[SIG-DIAG] join-room SUCCESS`, {
+          socketId: socket.id,
+          userId: socket.user.id,
+          roomCode,
+          participantIds: [...state.participants],
+          participantCount: state.participants.size,
+          roomSocketCount: roomSockets?.size ?? 0,
+          roomSocketIds: [...(roomSockets ?? [])],
+          ts: new Date().toISOString(),
+        });
+
         // Tell the peer someone arrived; give the joiner current pad state
         socket.to(roomCode).emit("peer-joined", {
           id: socket.user.id,
           name: socket.user.name,
           role: socket.user.role,
         });
+        console.log(`[SIG-DIAG] peer-joined EMITTED to room`, { roomCode, fromSocketId: socket.id, ts: new Date().toISOString() });
         ack?.({
           ok: true,
           code: state.code,
@@ -118,6 +132,17 @@ export function attachSocket(httpServer) {
       "signal",
       inRoom((payload) => {
         if (payload == null || typeof payload !== "object") return;
+        const payloadType = payload.description ? `description:${payload.description.type}` : payload.candidate ? 'candidate' : payload.meta ? 'meta' : 'unknown';
+        const roomSockets = io.sockets.adapter.rooms.get(joinedRoom);
+        console.log(`[SIG-DIAG] signal RELAY`, {
+          from: socket.id,
+          userId: socket.user.id,
+          room: joinedRoom,
+          payloadType,
+          roomSocketCount: roomSockets?.size ?? 0,
+          roomSocketIds: [...(roomSockets ?? [])],
+          ts: new Date().toISOString(),
+        });
         socket.to(joinedRoom).emit("signal", payload);
       })
     );
@@ -159,7 +184,14 @@ export function attachSocket(httpServer) {
     );
 
     // ── Teardown ────────────────────────────────────────────────────
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
+      console.log(`[SIG-DIAG] disconnect`, {
+        socketId: socket.id,
+        userId: socket.user.id,
+        room: joinedRoom,
+        reason,
+        ts: new Date().toISOString(),
+      });
       clearInterval(refill);
       if (!joinedRoom) return;
       const state = roomState.get(joinedRoom);

@@ -164,20 +164,26 @@ export default function InterviewRoom() {
   }, []);
 
   async function enterRoom() {
+    console.log("[ROOM-DIAG] enterRoom START", { roomCode, ts: Date.now() });
     setJoinBusy(true);
     setJoinError("");
     try {
       const socket = connectSocket();
+      console.log("[ROOM-DIAG] socket connected", { id: socket.id, ts: Date.now() });
       const res = await joinRoom(roomCode);
+      console.log("[ROOM-DIAG] joinRoom SUCCESS", { self: res.self, ts: Date.now() });
       setCode(res.code);
       setLanguage(res.language);
 
-      socket.on("peer-joined", () => {
+      socket.on("peer-joined", (peerInfo) => {
+        console.log("[ROOM-DIAG] peer-joined RECEIVED", { peerInfo, ts: Date.now() });
         setPeerPresent(true);
+        console.log("[ROOM-DIAG] ensurePeer CALLED from peer-joined", { ts: Date.now() });
         ensurePeer(); // we were first; their arrival starts negotiation
         sendMeta();
       });
-      socket.on("peer-left", () => {
+      socket.on("peer-left", (info) => {
+        console.log("[ROOM-DIAG] peer-left RECEIVED", { info, ts: Date.now() });
         setPeerPresent(false);
         setPeerStream(null);
         peerRef.current?.destroy();
@@ -191,6 +197,7 @@ export default function InterviewRoom() {
       socket.on("signal", (payload) => {
         if (payload == null || typeof payload !== "object") return;
         if (payload.meta && typeof payload.meta === "object") {
+          console.log("[ROOM-DIAG] signal RECEIVED meta", { meta: payload.meta, hasPeer: !!peerRef.current, ts: Date.now() });
           // Any inbound signal proves a peer is present (covers the
           // "we joined second" case with no peer-joined event for us).
           setPeerPresent(true);
@@ -201,12 +208,20 @@ export default function InterviewRoom() {
             sharing: typeof sharing === "boolean" ? sharing : m.sharing,
           }));
           if (!peerRef.current) {
+            console.log("[ROOM-DIAG] ensurePeer CALLED from inbound meta (no peer yet)", { ts: Date.now() });
             ensurePeer();
             sendMeta();
           }
           return;
         }
         if (payload.description || payload.candidate) {
+          console.log("[ROOM-DIAG] signal RECEIVED signaling", {
+            hasDescription: !!payload.description,
+            descType: payload.description?.type,
+            hasCandidate: !!payload.candidate,
+            hasPeer: !!peerRef.current,
+            ts: Date.now(),
+          });
           setPeerPresent(true);
           ensurePeer().handleSignal(payload);
         }
@@ -225,6 +240,7 @@ export default function InterviewRoom() {
         if (typeof value === "string") setLanguage(value);
       });
       socket.io.on("reconnect", async () => {
+        console.log("[ROOM-DIAG] socket RECONNECTED", { ts: Date.now() });
         // The server's room membership died with the old connection, so
         // an authorized re-join is required before any relay works again.
         // The ack also restores the current code-pad state (M3 resync).
@@ -243,9 +259,11 @@ export default function InterviewRoom() {
 
       // Announce ourselves; if a peer is already inside, their meta
       // reply (or offer) reveals them to us.
+      console.log("[ROOM-DIAG] sendMeta initial announcement", { ts: Date.now() });
       sendMeta();
       setPhase("live");
     } catch (err) {
+      console.error("[ROOM-DIAG] enterRoom FAILED", { error: err.message, ts: Date.now() });
       setJoinError(err.message);
       disconnectSocket();
     } finally {
