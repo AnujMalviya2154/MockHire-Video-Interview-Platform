@@ -207,9 +207,21 @@ export default function InterviewRoom() {
             camOn: typeof camOn === "boolean" ? camOn : m.camOn,
             sharing: typeof sharing === "boolean" ? sharing : m.sharing,
           }));
+          // ── M9 FIX: Do NOT call ensurePeer() from inbound meta ────
+          // Previously, the polite side (candidate) would create a peer
+          // here, which fires onnegotiationneeded and creates an OFFER.
+          // Meanwhile the impolite side (interviewer) also creates an
+          // offer from the peer-joined event. Both offers race — a
+          // simultaneous collision that the polite side fails to resolve
+          // via implicit rollback in practice.
+          //
+          // Fix: only reply with our own meta (so the peer learns our
+          // mic/cam state). The peer connection itself is created lazily
+          // when actual signaling (description/candidate) arrives from
+          // the impolite side's offer. This guarantees a single offer
+          // flow with no collision.
           if (!peerRef.current) {
-            console.log("[ROOM-DIAG] ensurePeer CALLED from inbound meta (no peer yet)", { ts: Date.now() });
-            ensurePeer();
+            console.log("[ROOM-DIAG] meta received but deferring peer creation (waiting for offer)", { ts: Date.now() });
             sendMeta();
           }
           return;
