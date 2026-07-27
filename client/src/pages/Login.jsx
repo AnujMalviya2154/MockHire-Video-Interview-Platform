@@ -15,12 +15,15 @@ export default function Login() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    console.log(`[${new Date().toISOString()}] [client-sys] [Login] [onSubmit] SUBMIT_CLICKED`, { perfNow: performance.now() });
     setError("");
     setBusy(true);
     try {
       await login(email, password);
+      console.log(`[${new Date().toISOString()}] [client-sys] [Login] [onSubmit] NAVIGATION_START`, { dest: "/dashboard", perfNow: performance.now() });
       navigate("/dashboard", { replace: true });
     } catch (err) {
+      console.log(`[${new Date().toISOString()}] [client-sys] [Login] [onSubmit] CAUGHT_ERROR`, { type: err.name, msg: err.message, status: err.status, perfNow: performance.now() });
       // Server returns a single generic "Invalid credentials" by design
       // (anti-enumeration) — we surface it verbatim, no guessing. A transport
       // failure is a different problem and gets an honest, actionable message

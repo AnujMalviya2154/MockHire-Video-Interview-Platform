@@ -12,6 +12,8 @@ import mongoose from "mongoose";
 const RETRY_BASE_MS = 1000;
 const RETRY_MAX_MS = 30_000;
 
+const bootTime = Date.now();
+
 export async function connectDB() {
   const uri = process.env.MONGO_URI;
   if (!uri) {
@@ -28,10 +30,13 @@ export async function connectDB() {
 
   for (let attempt = 1; ; attempt++) {
     try {
+      console.log(`[${new Date().toISOString()}] [sys] [db] [connectDB] CONNECTION_ATTEMPT`, { attempt, elapsedMs: Date.now() - bootTime });
       const conn = await mongoose.connect(uri, { serverSelectionTimeoutMS: 8000 });
+      console.log(`[${new Date().toISOString()}] [sys] [db] [connectDB] CONNECTION_SUCCESS`, { attempt, readyState: mongoose.connection.readyState, elapsedMs: Date.now() - bootTime });
       console.log(`MongoDB connected: ${conn.connection.host}`);
       return;
     } catch (err) {
+      console.log(`[${new Date().toISOString()}] [sys] [db] [connectDB] CONNECTION_FAILED`, { attempt, error: err.message });
       // err.message can carry the cluster hostname; that's operational detail,
       // not user data, and it's the single most useful thing for debugging.
       const wait = Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS);
@@ -49,3 +54,7 @@ export async function connectDB() {
 export function isDbReady() {
   return mongoose.connection.readyState === 1;
 }
+
+mongoose.connection.on("connected", () => console.log(`[${new Date().toISOString()}] [sys] [db] [event] READY_STATE_CHANGED`, { state: 1, text: 'connected' }));
+mongoose.connection.on("disconnected", () => console.log(`[${new Date().toISOString()}] [sys] [db] [event] READY_STATE_CHANGED`, { state: 0, text: 'disconnected' }));
+mongoose.connection.on("reconnected", () => console.log(`[${new Date().toISOString()}] [sys] [db] [event] READY_STATE_CHANGED`, { state: 1, text: 'reconnected' }));

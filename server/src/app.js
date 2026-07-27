@@ -111,7 +111,12 @@ app.get("/api/health", (req, res) =>
 // than a hung request or a confusing 500. /api/health above stays available so
 // tooling can still see the process is alive.
 app.use(["/api/auth", "/api/interviews"], (req, res, next) => {
-  if (isDbReady()) return next();
+  const rid = req.headers['x-debug-request-id'] || 'no-req-id';
+  if (isDbReady()) {
+    console.log(`[${new Date().toISOString()}] [${rid}] [app] [readiness] GATE_PASS`, { method: req.method, path: req.path });
+    return next();
+  }
+  console.log(`[${new Date().toISOString()}] [${rid}] [app] [readiness] GATE_503`, { method: req.method, path: req.path });
   res.set("Retry-After", "2");
   res.status(503).json({ message: "Server is starting up, try again in a moment" });
 });

@@ -35,22 +35,44 @@ router.post("/register", authLimiter, async (req, res) => {
 });
 
 router.post("/login", authLimiter, async (req, res) => {
+  const rid = req.headers['x-debug-request-id'] || 'no-req-id';
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] REQUEST_RECEIVED`);
   const { email, password } = req.body ?? {};
   if (
     typeof email !== "string" ||
     typeof password !== "string" ||
     email.length > 254 ||
     password.length > 128 // cap before bcrypt — no CPU-burn via huge inputs
-  )
+  ) {
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] VALIDATION_FAILED`);
     return res.status(400).json({ message: "Email and password required" });
+  }
 
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] VALIDATION_PASSED`);
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] FIND_USER_START`);
+  const t0 = Date.now();
   const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
-  // Same message for unknown email and wrong password — no user enumeration
-  if (!user || !(await user.comparePassword(password)))
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] FIND_USER_FINISHED`, { found: !!user, elapsedMs: Date.now() - t0 });
+  
+  if (!user) {
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] RETURN_401_NO_USER`);
     return res.status(401).json({ message: "Invalid credentials" });
+  }
+
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] BCRYPT_START`);
+  const b0 = Date.now();
+  const match = await user.comparePassword(password);
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] BCRYPT_FINISHED`, { match, elapsedMs: Date.now() - b0 });
+
+  if (!match) {
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] RETURN_401_BAD_PASSWORD`);
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
 
   res.cookie(COOKIE_NAME, signToken(user), cookieOptions());
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] JWT_CREATED_AND_COOKIE_WRITTEN`);
   res.json({ user: user.toSafeJSON() });
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [login] RESPONSE_SENT_200`);
 });
 
 router.post("/logout", requireAuth, async (req, res) => {
@@ -63,7 +85,9 @@ router.post("/logout", requireAuth, async (req, res) => {
 });
 
 router.get("/me", requireAuth, (req, res) => {
+  const rid = req.headers['x-debug-request-id'] || 'no-req-id';
   res.json({ user: req.user.toSafeJSON() });
+  console.log(`[${new Date().toISOString()}] [${rid}] [auth] [me] RESPONSE_SENT_200`, { userId: req.user._id });
 });
 
 export default router;

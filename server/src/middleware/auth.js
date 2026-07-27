@@ -26,20 +26,44 @@ export function cookieOptions() {
 }
 
 export async function requireAuth(req, res, next) {
+  const rid = req.headers['x-debug-request-id'] || 'no-req-id';
   try {
     const token = req.cookies?.[COOKIE_NAME];
-    if (!token) return res.status(401).json({ message: "Not authenticated" });
-    const payload = jwt.verify(token, process.env.JWT_SECRET, {
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-    });
-    const user = await User.findById(payload.sub);
-    // tokenVersion mismatch ⇒ token was revoked by logout — reject it
-    if (!user || payload.ver !== user.tokenVersion)
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] COOKIE_EXISTS`, { exists: !!token });
+    if (!token) {
+      console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] RETURN_401_NO_TOKEN`);
       return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET, {
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      });
+      console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] JWT_VERIFY_SUCCESS`);
+    } catch(err) {
+      console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] JWT_VERIFY_ERROR`, { error: err.message });
+      throw err;
+    }
+
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] FIND_USER_START`);
+    const t0 = Date.now();
+    const user = await User.findById(payload.sub);
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] FIND_USER_FINISHED`, { found: !!user, elapsedMs: Date.now() - t0, tokenVersionMatch: user ? payload.ver === user.tokenVersion : false });
+
+    // tokenVersion mismatch ⇒ token was revoked by logout — reject it
+    if (!user || payload.ver !== user.tokenVersion) {
+      console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] RETURN_401_REVOKED`);
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     req.user = user;
+    console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] NEXT_CALLED`);
     next();
-  } catch {
+  } catch (err) {
+    if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
+      console.log(`[${new Date().toISOString()}] [${rid}] [auth_mid] [requireAuth] RETURN_401_CATCH`, { error: err.message });
+    }
     return res.status(401).json({ message: "Invalid or expired session" });
   }
 }

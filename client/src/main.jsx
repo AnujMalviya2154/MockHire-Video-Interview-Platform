@@ -25,6 +25,8 @@ function GuestOnly({ children }) {
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
+console.log(`[${new Date().toISOString()}] [client-sys] [main] [init] REACT_APP_MOUNT`, { perfNow: performance.now() });
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>

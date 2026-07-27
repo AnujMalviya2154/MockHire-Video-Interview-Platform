@@ -21,12 +21,15 @@ export default function Dashboard() {
   useTick(30000); // keep "starts in…" labels honest
 
   const load = useCallback(async () => {
+    console.log(`[${new Date().toISOString()}] [client-sys] [Dashboard] [load] REQUEST_START`, { perfNow: performance.now() });
     setError("");
     try {
       const d = await api.listInterviews({ limit: 50 });
+      console.log(`[${new Date().toISOString()}] [client-sys] [Dashboard] [load] REQUEST_COMPLETED`, { count: d.interviews?.length, perfNow: performance.now() });
       setInterviews(d.interviews);
       return d.interviews;
     } catch (err) {
+      console.log(`[${new Date().toISOString()}] [client-sys] [Dashboard] [load] CAUGHT_ERROR`, { msg: err.message, perfNow: performance.now() });
       setError(err instanceof ApiError ? err.message : "Could not load interviews");
       return [];
     } finally {
@@ -35,6 +38,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    console.log(`[${new Date().toISOString()}] [client-sys] [Dashboard] [mount] MOUNTED`, { perfNow: performance.now() });
     load();
   }, [load]);
 

@@ -1,6 +1,9 @@
 import "dotenv/config";
 import http from "http";
 import app from "./app.js";
+
+const bootTime = Date.now();
+console.log(`[${new Date(bootTime).toISOString()}] [sys] [index] [boot] PROCESS_START`, { bootTime });
 import { connectDB } from "./config/db.js";
 import { attachSocket } from "./socket/index.js";
 
@@ -30,7 +33,9 @@ server.on("error", (err) => {
   throw err;
 });
 
+console.log(`[${new Date().toISOString()}] [sys] [index] [boot] LISTEN_CALLED`);
 server.listen(PORT, () => {
+  console.log(`[${new Date().toISOString()}] [sys] [index] [boot] LISTEN_CALLBACK_ENTERED`, { elapsedMs: Date.now() - bootTime, port: PORT });
   console.log(`API + signaling listening on http://localhost:${PORT}`);
 
   // Bind first, connect second. Mongoose dialling Atlas takes several seconds
@@ -40,5 +45,6 @@ server.listen(PORT, () => {
   // listener is up costs nothing (no request can be served sooner anyway) and
   // makes the API reachable — and honest, via the 503 readiness gate — from
   // the first millisecond.
+  console.log(`[${new Date().toISOString()}] [sys] [index] [boot] CONNECT_DB_CALLED`);
   connectDB();
 });
