@@ -175,6 +175,17 @@ export default function InterviewRoom() {
 
       socket.on("peer-joined", (peerInfo) => {
         setPeerPresent(true);
+        // If we already have a peer connection, it is stale because the peer refreshed.
+        if (peerRef.current) {
+          peerRef.current.destroy();
+          peerRef.current = null;
+          setPeerStream(null);
+          if (sharingRef.current) {
+            setSharing(false);
+            sharingRef.current = false;
+          }
+        }
+        metaRepliedRef.current = false;
         ensurePeer(); // we were first; their arrival starts negotiation
         sendMeta();
       });

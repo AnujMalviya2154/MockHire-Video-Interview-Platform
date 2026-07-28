@@ -31,10 +31,10 @@ Implementing Fix 1 introduced a regression: because both sides deferred peer cre
 - We introduced `metaRepliedRef` in `InterviewRoom.jsx` to track whether the client has already responded to a `meta` signal while waiting for the actual offer.
 - This breaks the ping-pong loop, allowing the single-offer flow to proceed smoothly.
 
-### Fix 3: Backend Presence Tracking for Ghost Disconnects
-To resolve the Ghost Disconnect race condition (which previously required a manual hard-refresh from both sides if triggered), a backend presence check was implemented in `server/src/socket/index.js`.
-- The server's `disconnect` handler now checks if the user has any *other* active sockets in the room before emitting `peer-left` and removing them from the `participants` set.
-- This makes mid-call refreshes and transient network drops completely seamless.
+### Fix 3: Resolving the Ghost Disconnect Deadlock (Backend + Frontend)
+To resolve the Ghost Disconnect race condition (which previously required a manual hard-refresh from both sides if triggered), a two-part fix was implemented:
+1. **Backend Presence Check:** In `server/src/socket/index.js`, the `disconnect` handler now checks if the user has any *other* active sockets in the room before emitting `peer-left` and removing them from the `participants` set. This suppresses the visual flashing of the UI during a refresh.
+2. **Frontend Stale Peer Teardown:** Suppressing `peer-left` caused a new deadlock where the surviving peer never destroyed their old WebRTC connection. Now, in `client/src/pages/InterviewRoom.jsx`, when the `peer-joined` event fires, the frontend unconditionally destroys any existing `RTCPeerConnection` tied to that user and builds a fresh one. Because rooms are strictly limited to 2 people, `peer-joined` guarantees the other person has returned with a fresh socket, necessitating a fresh WebRTC handshake.
 
 ## Consequences
 - **Positive:** WebRTC connection establishment is now highly deterministic and resilient across diverse mobile and desktop environments. The strict single-offer flow simplifies debugging.
