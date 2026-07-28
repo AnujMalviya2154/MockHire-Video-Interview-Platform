@@ -31,10 +31,10 @@ Implementing Fix 1 introduced a regression: because both sides deferred peer cre
 - We introduced `metaRepliedRef` in `InterviewRoom.jsx` to track whether the client has already responded to a `meta` signal while waiting for the actual offer.
 - This breaks the ping-pong loop, allowing the single-offer flow to proceed smoothly.
 
-### Future Fix: Backend Presence Tracking for Ghost Disconnects
-To resolve the Ghost Disconnect race condition (which currently requires a manual hard-refresh from both sides if triggered), a backend architectural change is scheduled for the next iteration:
-- The server's `disconnect` handler will be updated to check if the user has any *other* active sockets in the room before emitting `peer-left` and removing them from the `participants` set.
-- This will make mid-call refreshes and transient network drops completely seamless.
+### Fix 3: Backend Presence Tracking for Ghost Disconnects
+To resolve the Ghost Disconnect race condition (which previously required a manual hard-refresh from both sides if triggered), a backend presence check was implemented in `server/src/socket/index.js`.
+- The server's `disconnect` handler now checks if the user has any *other* active sockets in the room before emitting `peer-left` and removing them from the `participants` set.
+- This makes mid-call refreshes and transient network drops completely seamless.
 
 ## Consequences
 - **Positive:** WebRTC connection establishment is now highly deterministic and resilient across diverse mobile and desktop environments. The strict single-offer flow simplifies debugging.
