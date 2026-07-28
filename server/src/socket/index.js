@@ -163,17 +163,23 @@ export function attachSocket(httpServer) {
       clearInterval(refill);
       if (!joinedRoom) return;
       const state = roomState.get(joinedRoom);
-      socket.to(joinedRoom).emit("peer-left", { id: socket.user.id });
+      
       if (state) {
-        // Only drop the participant if they have no other live socket
-        // in the room (e.g. two tabs).
+        // Only drop the participant and emit peer-left if they have no other 
+        // live socket in the room (e.g. they completely left, didn't just refresh).
         const stillHere = [...io.sockets.adapter.rooms.get(joinedRoom) ?? []].some(
           (sid) => io.sockets.sockets.get(sid)?.user?.id === socket.user.id
         );
-        if (!stillHere) state.participants.delete(socket.user.id);
+        
+        if (!stillHere) {
+          state.participants.delete(socket.user.id);
+          socket.to(joinedRoom).emit("peer-left", { id: socket.user.id });
+        }
+        
         // Last one out: drop the room's ephemeral state entirely
-        if (!(io.sockets.adapter.rooms.get(joinedRoom)?.size > 0))
+        if (!(io.sockets.adapter.rooms.get(joinedRoom)?.size > 0)) {
           roomState.delete(joinedRoom);
+        }
       }
     });
   });
