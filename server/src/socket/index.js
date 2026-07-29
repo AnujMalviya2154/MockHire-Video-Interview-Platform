@@ -75,6 +75,11 @@ export function attachSocket(httpServer) {
         if (interview.status === "cancelled")
           return ack?.({ error: "This interview was cancelled" });
 
+        const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+        if (Date.now() > new Date(interview.scheduledAt).getTime() + EIGHT_HOURS) {
+          return ack?.({ error: "This interview room expired 8 hours after the scheduled time." });
+        }
+
         const state = getRoomState(roomCode);
         // 1:1 rooms — same user may reconnect (refresh), a third user may not
         if (state.participants.size >= 2 && !state.participants.has(socket.user.id))

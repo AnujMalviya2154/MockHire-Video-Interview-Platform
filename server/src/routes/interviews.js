@@ -130,6 +130,11 @@ router.get(
     if (interview.status === "cancelled")
       return res.status(410).json({ message: "This interview was cancelled" });
 
+    const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+    if (Date.now() > new Date(interview.scheduledAt).getTime() + EIGHT_HOURS) {
+      return res.status(410).json({ message: "This interview room expired 8 hours after the scheduled time." });
+    }
+
     res.json({ interview: shapeForViewer(interview, req.user._id) });
   })
 );

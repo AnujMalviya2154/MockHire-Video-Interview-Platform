@@ -158,7 +158,14 @@ export default function Dashboard() {
               <Section title="Past">
                 <Ledger>
                   {past.map((iv) => (
-                    <LedgerRow key={iv._id} iv={iv} me={user} past onFeedback={() => setFeedbackFor(iv)} />
+                    <LedgerRow 
+                      key={iv._id} 
+                      iv={iv} 
+                      me={user} 
+                      past 
+                      onFeedback={() => setFeedbackFor(iv)} 
+                      onJoin={() => navigate(`/room/${iv.roomCode}`)}
+                    />
                   ))}
                 </Ledger>
               </Section>
@@ -272,7 +279,8 @@ function Ledger({ children }) {
 function LedgerRow({ iv, me, past = false, onJoin, onCancelled, onFeedback }) {
   const isInterviewer = String(iv.interviewer?._id) === String(me.id);
   const other = isInterviewer ? iv.candidate : iv.interviewer;
-  const joinable = iv.status === "scheduled" && onJoin;
+  const isExpired = Date.now() > new Date(iv.scheduledAt).getTime() + 8 * 60 * 60 * 1000;
+  const joinable = iv.status !== "cancelled" && !isExpired && onJoin;
   const rail = dateRail(iv.scheduledAt);
   const done = iv.status !== "scheduled";
 
@@ -331,7 +339,7 @@ function LedgerRow({ iv, me, past = false, onJoin, onCancelled, onFeedback }) {
           </Button>
         )}
         {joinable && !past && isInterviewer && <InlineCancel id={iv._id} onCancelled={onCancelled} />}
-        {joinable && !past && (
+        {joinable && (
           <Button variant="secondary" onClick={onJoin}>Join</Button>
         )}
         {canGiveFeedback && (
