@@ -80,7 +80,7 @@ export default function InterviewRoom() {
         setError(
           err instanceof ApiError
             ? err.status === 410
-              ? "This interview has been cancelled."
+              ? err.message
               : "You don't have access to this room."
             : "Could not load the room."
         );
