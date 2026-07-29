@@ -36,7 +36,7 @@ export default function AuthLayout({ title, subtitle, alt, children }) {
   );
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
+    <div className="grid min-h-[100dvh] lg:grid-cols-[1fr_1.1fr]">
       {/* Brand panel */}
       <aside
         ref={scope}

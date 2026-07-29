@@ -66,7 +66,7 @@ export default function Dashboard() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-ink-50">
+    <div className="min-h-[100dvh] bg-ink-50">
       <header className="sticky top-0 z-[var(--z-sticky)] border-b border-ink-200/60 bg-ink-50/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <Logo />

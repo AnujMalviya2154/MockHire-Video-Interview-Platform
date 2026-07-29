@@ -383,7 +383,7 @@ export default function InterviewRoom() {
   // ── Render ─────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-night-950">
+      <div className="grid min-h-[100dvh] place-items-center bg-night-950">
         <Spinner />
       </div>
     );
@@ -391,7 +391,7 @@ export default function InterviewRoom() {
 
   if (error) {
     return (
-      <div className="grid min-h-screen place-items-center bg-night-950 px-6 text-center">
+      <div className="grid min-h-[100dvh] place-items-center bg-night-950 px-6 text-center">
         <div>
           <p className="font-display text-xl font-semibold text-white">{error}</p>
           <Button variant="light" className="mt-5" onClick={() => navigate("/dashboard")}>
@@ -491,7 +491,7 @@ function Lobby({
   const live = isImminent(interview.scheduledAt);
 
   return (
-    <div className="flex min-h-screen flex-col bg-night-950 text-white">
+    <div className="flex min-h-[100dvh] flex-col bg-night-950 text-white">
       <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
         <Logo dark />
         <div className="flex items-center gap-4">
@@ -674,7 +674,7 @@ function LiveStage({
   const reconnecting = callState === "disconnected" || callState === "failed";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-night-950 text-white">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-night-950 text-white">
       <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-3">
         <Logo dark />
         <p className="flex items-center gap-2 text-sm text-white/60">
