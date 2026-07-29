@@ -40,7 +40,8 @@ never the interviewer's private comments).
 
 **Room security** — every room code is 128 bits of `crypto.randomBytes`;
 joining is authorized server-side per socket connection against the
-database record. An outsider cannot enter a room even with the full URL.
+database record. Rooms enforce a strict 8-hour expiry lifecycle to prevent 
+stale connections. An outsider cannot enter a room even with the full URL.
 
 ## 📸 Screenshots
 
@@ -55,7 +56,7 @@ database record. An outsider cannot enter a room even with the full URL.
 
 | Layer | Technology |
 |---|---|
-| Client | React 18, Vite, Tailwind CSS v4, React Router 7, GSAP |
+| Client | React 18, Vite, Tailwind CSS v4 (w/ modern `dvh` viewports), React Router 7, GSAP |
 | Server | Node.js, Express 4, Socket.IO 4 |
 | Database | MongoDB (Atlas or local), Mongoose 8 |
 | Video | Native WebRTC (P2P, DTLS-SRTP), signaled over Socket.IO |
@@ -141,6 +142,9 @@ Load-bearing decisions, each argued in full in `docs/`:
 - **Video never touches the server.** Media is peer-to-peer over
   DTLS-SRTP; the server only relays signaling (offers/answers/ICE) through
   authorized socket rooms. The server *cannot* see or record calls.
+- **Resilient WebRTC Signaling.** Built to handle "ghost disconnects" 
+  and sudden page refreshes seamlessly. Strict cleanup flows ensure peers 
+  can drop and reconnect without breaking the perfect negotiation state.
 - **One HTTP server for REST and sockets** — the WebSocket handshake
   authenticates with the same httpOnly cookie as REST; no second auth
   scheme, no token in JavaScript.
@@ -217,7 +221,7 @@ server/           Express + Socket.IO
   src/middleware/ auth guard, error handler
   tests/          integration suites
 docs/             PRD, architecture guide, security checklist,
-                  per-milestone decision records (M0–M7)
+                  per-milestone decision records
 ```
 
 ## 🗒 Scope notes (v1)
