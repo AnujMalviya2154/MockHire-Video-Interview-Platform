@@ -70,10 +70,41 @@ This is the exact implementation sequence decided for M11:
 1. **STAGE 1 — Cloudflare credential endpoint + configuration validation:** Server-side credential integration, authenticated ICE endpoint, 8-hour/room TTL, validation/normalization, timeout handling.
 2. **STAGE 2 — TurnUsage persistence + safety budget:** TurnUsage model, monthly boundary, persistent Mongo accounting, conservative time × bandwidth estimation.
 3. **STAGE 3 — Dynamic ICE configuration injection:** Client API call, dynamic retrieval, injection into `createPeer()`, preserving negotiation.
-4. **STAGE 4 — Relay-state telemetry + room reconciliation:** `getStats`-based candidate inspection, direct/relay/unknown state, authenticated telemetry, conservative reconciliation.
 5. **STAGE 5 — 800 GiB cutoff + 60-second TURN drain:** Stop credential issuance, mark active rooms draining, notify users, 60s grace, terminate TURN-backed media, protect P2P rooms, STUN-only reconnect.
 6. **STAGE 6 — Production diagnostics and verification:** Same/cross-network tests, mobile hotspot tests, restrictive-network tests, verify reconnect, inspect analytics.
 7. **STAGE 7 — Documentation and final verification:** Architecture/security updates, final deployment verification.
+
+## Implementation Status
+
+M11 implementation is currently complete through Stage 4 of 7.
+
+✅ Stage 1 — COMPLETE
+Implemented authenticated ICE endpoint `/api/webrtc/ice-servers` with Cloudflare credential generation, 8-hour/room TTL validation, STUN-only fallback, and security normalization.
+
+✅ Stage 2 — COMPLETE
+Implemented `TurnUsage` MongoDB model for monthly accounting, atomic increment service, restart persistence, and safe numeric boundaries.
+
+✅ Stage 3 — COMPLETE
+Implemented dynamic client-side ICE injection into `RTCPeerConnection` without modifying the core Perfect Negotiation logic.
+
+✅ Stage 4 — COMPLETE
+Implemented `getStats` connection-mode telemetry, generation/sequence race-condition protection, and conservative room reconciliation policy in Socket.IO.
+
+⏳ Stage 5 — PENDING
+The 800 GiB cutoff and 60-second active TURN drain are not yet implemented.
+
+⏳ Stage 6 — PENDING
+Final real-world production connectivity testing and diagnostics are not yet completed.
+
+⏳ Stage 7 — PENDING
+Final documentation/security/deployment verification occurs after Stages 5–6.
+
+### Cumulative Verification
+- Stage 1: 17/17 tests
+- Stage 2: 58/58 cumulative tests
+- Stage 3: 63/63 cumulative tests
+- Stage 4: 71/71 cumulative tests
+
 
 ## Testing Requirements
 Acceptance criteria include:

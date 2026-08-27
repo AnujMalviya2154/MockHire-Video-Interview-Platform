@@ -40,6 +40,9 @@ export default function InterviewRoom() {
 
   // ── Peer / call state ──────────────────────────────────────────────
   const peerRef = useRef(null); // { pc, handleSignal, shareScreen, stopShare, destroy }
+  const iceServersRef = useRef([{ urls: "stun:stun.l.google.com:19302" }]);
+  const sessionGenerationRef = useRef(0);
+  const telemetrySequenceRef = useRef(0);
   const [peerStream, setPeerStream] = useState(null);
   const [peerPresent, setPeerPresent] = useState(false);
   const [peerMeta, setPeerMeta] = useState({ micOn: true, camOn: true, sharing: false });
@@ -136,16 +139,69 @@ export default function InterviewRoom() {
 
   const ensurePeer = useCallback(() => {
     if (peerRef.current) return peerRef.current;
+    
+    sessionGenerationRef.current += 1;
+    telemetrySequenceRef.current = 0;
+    const currentGen = sessionGenerationRef.current;
+
     const polite = user.role === "candidate"; // deterministic, no extra negotiation
-    peerRef.current = createPeer({
+    const peer = createPeer({
+      iceServers: iceServersRef.current,
       polite,
       localStream: streamRef.current ?? new MediaStream(),
       onTrack: (_track, stream) => setPeerStream(stream),
       onSignal: (payload) => connectSocket().emit("signal", payload),
       onConnectionChange: setCallState,
     });
+
+    peer.pc.addEventListener("iceconnectionstatechange", async () => {
+      if (peer.pc.iceConnectionState === "completed") {
+        const mode = await peer.getTelemetryMode();
+        if (mode !== "unknown" && sessionGenerationRef.current === currentGen) {
+          telemetrySequenceRef.current += 1;
+          connectSocket().emit("connection-mode", {
+            mode,
+            sessionGeneration: currentGen,
+            sequence: telemetrySequenceRef.current,
+          });
+        }
+      }
+    });
+
+    peerRef.current = peer;
     return peerRef.current;
   }, [user.role]);
+
+  // ── Telemetry emission on connection ───────────────────────────────
+  useEffect(() => {
+    if (!peerRef.current || phase !== "live" || callState !== "connected") return;
+
+    const peer = peerRef.current;
+    const currentGen = sessionGenerationRef.current;
+    const socket = connectSocket();
+    let disposed = false;
+
+    async function checkAndEmit() {
+      if (disposed) return;
+      const mode = await peer.getTelemetryMode();
+      if (disposed || mode === "unknown") return;
+
+      telemetrySequenceRef.current += 1;
+      socket.emit("connection-mode", {
+        mode,
+        sessionGeneration: currentGen,
+        sequence: telemetrySequenceRef.current,
+      });
+    }
+
+    checkAndEmit();
+    const timeout = setTimeout(checkAndEmit, 2500);
+
+    return () => {
+      disposed = true;
+      clearTimeout(timeout);
+    };
+  }, [callState, phase]);
 
   // ── Join: connect socket, authorize, wire every handler ────────────
   const [joinBusy, setJoinBusy] = useState(false);
@@ -168,6 +224,15 @@ export default function InterviewRoom() {
     setJoinBusy(true);
     setJoinError("");
     try {
+      try {
+        const iceRes = await api.getIceServers(roomCode);
+        if (iceRes?.iceServers) {
+          iceServersRef.current = iceRes.iceServers;
+        }
+      } catch (err) {
+        console.error("Failed to fetch ICE configuration, falling back to STUN-only:", err);
+      }
+
       const socket = connectSocket();
       const res = await joinRoom(roomCode);
       setCode(res.code);
