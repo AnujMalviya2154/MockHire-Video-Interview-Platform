@@ -76,7 +76,7 @@ This is the exact implementation sequence decided for M11:
 
 ## Implementation Status
 
-M11 implementation is currently complete through Stage 4 of 7.
+M11 implementation is complete through Stage 5 of 7.
 
 ✅ Stage 1 — COMPLETE
 Implemented authenticated ICE endpoint `/api/webrtc/ice-servers` with Cloudflare credential generation, 8-hour/room TTL validation, STUN-only fallback, and security normalization.
@@ -90,20 +90,21 @@ Implemented dynamic client-side ICE injection into `RTCPeerConnection` without m
 ✅ Stage 4 — COMPLETE
 Implemented `getStats` connection-mode telemetry, generation/sequence race-condition protection, and conservative room reconciliation policy in Socket.IO.
 
-⏳ Stage 5 — PENDING
-The 800 GiB cutoff and 60-second active TURN drain are not yet implemented.
+✅ Stage 5 — COMPLETE
+Implemented the 800 GiB safety cutoff, active monitoring loop, graceful 60-second TURN drain, STUN-only reconnect logic, and post-cutoff migration handling.
 
 ⏳ Stage 6 — PENDING
-Final real-world production connectivity testing and diagnostics are not yet completed.
+Physical production/cross-network verification remains outstanding.
 
 ⏳ Stage 7 — PENDING
-Final documentation/security/deployment verification occurs after Stages 5–6.
+Final documentation/security/deployment verification remains outstanding.
 
 ### Cumulative Verification
 - Stage 1: 17/17 tests
 - Stage 2: 58/58 cumulative tests
 - Stage 3: 63/63 cumulative tests
 - Stage 4: 71/71 cumulative tests
+- Stage 5: 99/99 cumulative tests
 
 
 ## Testing Requirements

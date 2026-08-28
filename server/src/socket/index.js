@@ -51,6 +51,15 @@ export function getRoomConnectionMode(roomCode) {
   return "unknown";
 }
 
+/** Read-only snapshot of active room codes with at least one participant. */
+export function getActiveRoomCodes() {
+  const codes = [];
+  for (const [code, state] of roomState) {
+    if (state.participants.size > 0) codes.push(code);
+  }
+  return codes;
+}
+
 export function attachSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {

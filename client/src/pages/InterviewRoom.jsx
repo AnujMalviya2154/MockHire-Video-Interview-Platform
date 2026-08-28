@@ -48,6 +48,7 @@ export default function InterviewRoom() {
   const [peerMeta, setPeerMeta] = useState({ micOn: true, camOn: true, sharing: false });
   const [sharing, setSharing] = useState(false);
   const [callState, setCallState] = useState(""); // RTCPeerConnection.connectionState
+  const [drainDeadline, setDrainDeadline] = useState(null); // Stage 5: server-set drain timestamp
 
   // ── Panel / chat / code ────────────────────────────────────────────
   const [panel, setPanel] = useState(null); // null | chat | code
@@ -203,6 +204,19 @@ export default function InterviewRoom() {
     };
   }, [callState, phase]);
 
+  // ── Stage 5: Drain countdown ───────────────────────────────────────
+  const [drainSeconds, setDrainSeconds] = useState(null);
+  useEffect(() => {
+    if (!drainDeadline) { setDrainSeconds(null); return; }
+    function tick() {
+      const remaining = Math.max(0, Math.ceil((drainDeadline - Date.now()) / 1000));
+      setDrainSeconds(remaining);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [drainDeadline]);
+
   // ── Join: connect socket, authorize, wire every handler ────────────
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -317,6 +331,22 @@ export default function InterviewRoom() {
       });
       socket.on("code-language", (value) => {
         if (typeof value === "string") setLanguage(value);
+      });
+
+      // ── Stage 5: TURN capacity drain ──────────────────────────────
+      socket.on("turn-capacity-drain", ({ deadline }) => {
+        if (typeof deadline === "number") setDrainDeadline(deadline);
+      });
+      socket.on("turn-drain-complete", () => {
+        // Reuse existing destroy path — no new teardown mechanism.
+        // Socket.IO, chat, and code pad remain alive.
+        peerRef.current?.destroy();
+        peerRef.current = null;
+        setPeerStream(null);
+        setSharing(false);
+        sharingRef.current = false;
+        setCallState("drain-terminated");
+        setDrainDeadline(null);
       });
       socket.io.on("reconnect", async () => {
         // The server's room membership died with the old connection, so
@@ -513,6 +543,7 @@ export default function InterviewRoom() {
         onSend={sendChat}
         onCode={changeCode}
         onLanguage={changeLanguage}
+        drainSeconds={drainSeconds}
       />
     );
   }
@@ -720,6 +751,7 @@ function LiveStage({
   onSend,
   onCode,
   onLanguage,
+  drainSeconds,
 }) {
   const stageRef = useRef(null);
 
@@ -737,6 +769,7 @@ function LiveStage({
 
   const connecting = peerPresent && !peerStream;
   const reconnecting = callState === "disconnected" || callState === "failed";
+  const drainTerminated = callState === "drain-terminated";
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-night-950 text-white">
@@ -776,13 +809,37 @@ function LiveStage({
             </div>
           )}
 
-          {(connecting || reconnecting) && (
+          {(connecting || reconnecting) && !drainTerminated && (
             <p
               role="status"
               className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-night-900/90 px-4 py-1.5 text-sm text-white/80 ring-1 ring-white/10"
             >
               {reconnecting ? "Reconnecting" : "Connecting video"}
             </p>
+          )}
+
+          {/* Stage 5: Drain countdown notification */}
+          {drainSeconds != null && drainSeconds > 0 && (
+            <p
+              role="alert"
+              className="absolute left-1/2 top-6 z-10 -translate-x-1/2 rounded-full bg-warn-600/90 px-4 py-1.5 text-sm font-medium text-white ring-1 ring-warn-400/40"
+            >
+              Relayed connection capacity reached. Video ending in {drainSeconds}s
+            </p>
+          )}
+
+          {/* Stage 5: Post-drain terminated state */}
+          {drainTerminated && (
+            <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-night-900/95">
+              <div className="text-center">
+                <p className="font-display text-lg font-semibold text-warn-400">
+                  Relayed connection capacity reached
+                </p>
+                <p className="mt-2 max-w-sm text-sm text-white/60">
+                  Video has ended. Chat and code pad remain available.
+                </p>
+              </div>
+            </div>
           )}
 
           {/* Self view — corner tile. Always sits above the control bar

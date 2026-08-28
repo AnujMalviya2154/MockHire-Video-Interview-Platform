@@ -14,6 +14,8 @@ import { Router } from "express";
 import Interview from "../models/Interview.js";
 import { requireAuth } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { isCutoffActive } from "../services/turnAccounting.js";
+import { isBudgetExhausted } from "../services/turnBudget.js";
 
 const router = Router();
 
@@ -165,10 +167,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const roomCode = req.query.roomCode || null;
 
-    // ── Safety budget check (placeholder for Stage 2) ──────────
-    // Once TurnUsage is implemented, this will check
-    // estimatedTurnSafetyBytes < 800 GiB before proceeding.
-    // For now, always allow if Cloudflare config is present.
+    // ── Safety budget check (Stage 5) ────────────────────────────
+    // Fast path: in-memory flag (survives process lifetime).
+    // Slow path: DB read (survives process restart — covers the
+    // window between restart and the first accounting tick).
+    const exhausted = isCutoffActive() || await isBudgetExhausted();
+    if (exhausted) {
+      return res.json({ iceServers: [GOOGLE_STUN] });
+    }
 
     // ── TTL calculation ────────────────────────────────────────
     const ttl = await roomTtlSeconds(roomCode);
