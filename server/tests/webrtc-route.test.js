@@ -18,10 +18,20 @@ const ALLOWED_TURN_URLS = [
 ];
 
 function extractCredentials(cfResponse) {
-  if (!cfResponse?.iceServers || !Array.isArray(cfResponse.iceServers)) return null;
-  const turnEntry = cfResponse.iceServers.find(
-    (entry) => entry.username && entry.credential
-  );
+  if (!cfResponse?.iceServers) return null;
+
+  let turnEntry = null;
+
+  if (Array.isArray(cfResponse.iceServers)) {
+    turnEntry = cfResponse.iceServers.find(
+      (entry) => entry.username && entry.credential
+    );
+  } else if (typeof cfResponse.iceServers === "object") {
+    if (cfResponse.iceServers.username && cfResponse.iceServers.credential) {
+      turnEntry = cfResponse.iceServers;
+    }
+  }
+
   if (!turnEntry) return null;
   return { username: turnEntry.username, credential: turnEntry.credential };
 }
@@ -38,8 +48,8 @@ function buildIceServers(credentials) {
   ];
 }
 
-// ── Simulated Cloudflare response (matching documented schema) ───────
-const MOCK_CF_RESPONSE = {
+// ── Simulated Cloudflare responses (matching documented schemas) ───────
+const MOCK_CF_RESPONSE_ARRAY = {
   iceServers: [
     {
       urls: [
@@ -62,11 +72,34 @@ const MOCK_CF_RESPONSE = {
   ],
 };
 
+const MOCK_CF_RESPONSE_OBJECT = {
+  iceServers: {
+    urls: [
+      "turn:turn.cloudflare.com:3478?transport=udp",
+      "turn:turn.cloudflare.com:53?transport=udp",
+      "turn:turn.cloudflare.com:3478?transport=tcp",
+      "turn:turn.cloudflare.com:80?transport=tcp",
+      "turns:turn.cloudflare.com:5349?transport=tcp",
+      "turns:turn.cloudflare.com:443?transport=tcp",
+    ],
+    username: "test-user-abc123",
+    credential: "test-cred-xyz789",
+  },
+};
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe("extractCredentials", () => {
-  it("extracts username and credential from a valid Cloudflare response", () => {
-    const result = extractCredentials(MOCK_CF_RESPONSE);
+  it("extracts username and credential from a valid Cloudflare array response", () => {
+    const result = extractCredentials(MOCK_CF_RESPONSE_ARRAY);
+    assert.deepStrictEqual(result, {
+      username: "test-user-abc123",
+      credential: "test-cred-xyz789",
+    });
+  });
+
+  it("extracts username and credential from a valid Cloudflare object response", () => {
+    const result = extractCredentials(MOCK_CF_RESPONSE_OBJECT);
     assert.deepStrictEqual(result, {
       username: "test-user-abc123",
       credential: "test-cred-xyz789",
@@ -81,14 +114,28 @@ describe("extractCredentials", () => {
     assert.strictEqual(extractCredentials({}), null);
   });
 
-  it("returns null for response with STUN-only (no credentials)", () => {
+  it("returns null for array response with STUN-only (no credentials)", () => {
     const stunOnly = {
       iceServers: [{ urls: ["stun:stun.cloudflare.com:3478"] }],
     };
     assert.strictEqual(extractCredentials(stunOnly), null);
   });
 
-  it("returns null for malformed response with empty iceServers", () => {
+  it("returns null for object response with missing username", () => {
+    const missingUser = {
+      iceServers: { urls: ["turn:test"], credential: "c" },
+    };
+    assert.strictEqual(extractCredentials(missingUser), null);
+  });
+
+  it("returns null for object response with missing credential", () => {
+    const missingCred = {
+      iceServers: { urls: ["turn:test"], username: "u" },
+    };
+    assert.strictEqual(extractCredentials(missingCred), null);
+  });
+
+  it("returns null for malformed response with empty iceServers array", () => {
     assert.strictEqual(extractCredentials({ iceServers: [] }), null);
   });
 });
@@ -173,8 +220,25 @@ describe("buildIceServers", () => {
 });
 
 describe("end-to-end: Cloudflare response → normalized iceServers", () => {
-  it("produces the correct final configuration from a real Cloudflare response", () => {
-    const creds = extractCredentials(MOCK_CF_RESPONSE);
+  it("produces the correct final configuration from a real Cloudflare array response", () => {
+    const creds = extractCredentials(MOCK_CF_RESPONSE_ARRAY);
+    const iceServers = buildIceServers(creds);
+
+    assert.deepStrictEqual(iceServers, [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: [
+          "turn:turn.cloudflare.com:3478?transport=udp",
+          "turns:turn.cloudflare.com:443?transport=tcp",
+        ],
+        username: "test-user-abc123",
+        credential: "test-cred-xyz789",
+      },
+    ]);
+  });
+
+  it("produces the correct final configuration from a real Cloudflare object response", () => {
+    const creds = extractCredentials(MOCK_CF_RESPONSE_OBJECT);
     const iceServers = buildIceServers(creds);
 
     assert.deepStrictEqual(iceServers, [
@@ -200,7 +264,7 @@ describe("end-to-end: Cloudflare response → normalized iceServers", () => {
   });
 
   it("falls back to STUN-only when Cloudflare returns malformed data", () => {
-    const creds = extractCredentials({ iceServers: "not-an-array" });
+    const creds = extractCredentials({ iceServers: "not-an-array-or-object" });
     const iceServers = buildIceServers(creds);
 
     assert.deepStrictEqual(iceServers, [
@@ -211,22 +275,56 @@ describe("end-to-end: Cloudflare response → normalized iceServers", () => {
 
 describe("security invariants", () => {
   it("permanent secrets are never in the output", () => {
-    const creds = extractCredentials(MOCK_CF_RESPONSE);
+    const creds = extractCredentials(MOCK_CF_RESPONSE_ARRAY);
     const iceServers = buildIceServers(creds);
     const json = JSON.stringify(iceServers);
 
-    // These would be the env vars — ensure they're never in output
     assert.ok(!json.includes("TURN_KEY_API_TOKEN"), "API token must not appear");
     assert.ok(!json.includes("TURN_KEY_ID"), "Key ID must not appear");
   });
 
   it("only ephemeral credentials appear in the TURN entry", () => {
-    const creds = extractCredentials(MOCK_CF_RESPONSE);
+    const creds = { username: "ephemeral-u", credential: "ephemeral-c" };
     const iceServers = buildIceServers(creds);
-    const turnEntry = iceServers[1];
+    assert.strictEqual(iceServers[1].username, "ephemeral-u");
+    assert.strictEqual(iceServers[1].credential, "ephemeral-c");
+  });
+});
 
-    // Only username, credential, and urls should be present
-    const keys = Object.keys(turnEntry).sort();
-    assert.deepStrictEqual(keys, ["credential", "urls", "username"]);
+describe("Real Provider Integration Test (Stage 1 Fix)", async () => {
+  it("fetches, parses, and normalizes a real Cloudflare response", async () => {
+    const { TURN_KEY_ID, TURN_KEY_API_TOKEN } = process.env;
+    if (!TURN_KEY_ID || !TURN_KEY_API_TOKEN) {
+      console.log("Skipping real provider test: credentials missing in .env");
+      return;
+    }
+
+    const url = `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(TURN_KEY_ID)}/credentials/generate`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${TURN_KEY_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ttl: 28800, customIdentifier: "stage1-integration-test" }),
+    });
+
+    assert.strictEqual(res.status, 201, "Cloudflare API should return 201 Created");
+    
+    const cfData = await res.json();
+    
+    const creds = extractCredentials(cfData);
+    assert.ok(creds !== null, "extractCredentials should successfully parse the real response");
+    assert.ok(creds.username, "Username must exist");
+    assert.ok(creds.credential, "Credential must exist");
+
+    const finalConfig = buildIceServers(creds);
+    assert.strictEqual(finalConfig.length, 2, "Should return STUN + TURN");
+    assert.deepStrictEqual(finalConfig[0], GOOGLE_STUN);
+    assert.deepStrictEqual(finalConfig[1].urls, ALLOWED_TURN_URLS);
+    
+    const jsonStr = JSON.stringify(finalConfig);
+    assert.ok(!jsonStr.includes(TURN_KEY_API_TOKEN), "Final config MUST NOT contain permanent token");
+    assert.ok(!jsonStr.includes(TURN_KEY_ID), "Final config MUST NOT contain permanent ID");
   });
 });

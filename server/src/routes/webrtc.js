@@ -98,8 +98,8 @@ async function fetchCloudflareCredentials({ ttl, customIdentifier }) {
     const data = await res.json();
 
     // Sanity-check the response shape
-    if (!data?.iceServers || !Array.isArray(data.iceServers)) {
-      console.error("[TURN] Malformed Cloudflare response — missing iceServers array");
+    if (!data?.iceServers) {
+      console.error("[TURN] Malformed Cloudflare response — missing iceServers field");
       return null;
     }
 
@@ -123,12 +123,21 @@ async function fetchCloudflareCredentials({ ttl, customIdentifier }) {
  * Returns { username, credential } or null if the response is unusable.
  */
 function extractCredentials(cfResponse) {
-  if (!cfResponse?.iceServers || !Array.isArray(cfResponse.iceServers)) return null;
+  if (!cfResponse?.iceServers) return null;
 
-  // The TURN entry is the object that carries username + credential
-  const turnEntry = cfResponse.iceServers.find(
-    (entry) => entry.username && entry.credential
-  );
+  let turnEntry = null;
+
+  if (Array.isArray(cfResponse.iceServers)) {
+    // Array shape (e.g., from /generate-ice-servers)
+    turnEntry = cfResponse.iceServers.find(
+      (entry) => entry.username && entry.credential
+    );
+  } else if (typeof cfResponse.iceServers === "object") {
+    // Object shape (e.g., from /generate)
+    if (cfResponse.iceServers.username && cfResponse.iceServers.credential) {
+      turnEntry = cfResponse.iceServers;
+    }
+  }
   if (!turnEntry) {
     console.error("[TURN] Cloudflare response contained no TURN credentials");
     return null;

@@ -76,7 +76,7 @@ This is the exact implementation sequence decided for M11:
 
 ## Implementation Status
 
-M11 implementation is complete through Stage 5 of 7.
+M11 implementation is complete through Stage 5 of 7. Local provider integration has been verified, while physical cross-network TURN verification remains pending.
 
 ✅ Stage 1 — COMPLETE
 Implemented authenticated ICE endpoint `/api/webrtc/ice-servers` with Cloudflare credential generation, 8-hour/room TTL validation, STUN-only fallback, and security normalization.
@@ -93,18 +93,34 @@ Implemented `getStats` connection-mode telemetry, generation/sequence race-condi
 ✅ Stage 5 — COMPLETE
 Implemented the 800 GiB safety cutoff, active monitoring loop, graceful 60-second TURN drain, STUN-only reconnect logic, and post-cutoff migration handling.
 
-⏳ Stage 6 — PENDING
+⏳ Stage 6 — IN PROGRESS / PHYSICAL VERIFICATION PENDING
 Physical production/cross-network verification remains outstanding.
 
 ⏳ Stage 7 — PENDING
 Final documentation/security/deployment verification remains outstanding.
+
+### Stage 1 Provider Integration Correction
+
+1. **What happened:** The first real request to Cloudflare succeeded with HTTP 201, but MockHire rejected the response because the implementation expected `iceServers` to be an array.
+2. **Why automated tests missed it:** The Stage 1 test fixture (`MOCK_CF_RESPONSE`) modeled the response incorrectly as an array, so the original suite passed despite the provider-contract mismatch.
+3. **What the real provider returned:** `/credentials/generate` returned `iceServers` as a single object containing `urls`, `username`, and `credential`.
+4. **The fix:** `extractCredentials()` was updated to support and validate the actual object response shape while retaining explicit support for the array shape if intentionally supported.
+5. **Test correction:** The test fixture was split/updated so both actual provider shapes are explicitly tested where applicable.
+6. **Verification:** A real-provider integration test was added using the configured local Cloudflare credentials.
+7. **Result:** The real Cloudflare request succeeded, MockHire normalized the response correctly, and the cumulative test suite reached 104/104.
+8. **Security:** Permanent API credentials were not logged, returned, or included in test artifacts.
+
+Provider mocks are not a substitute for real-provider contract verification. The real Cloudflare integration test exposed the mismatch prior to deployment.
 
 ### Cumulative Verification
 - Stage 1: 17/17 tests
 - Stage 2: 58/58 cumulative tests
 - Stage 3: 63/63 cumulative tests
 - Stage 4: 71/71 cumulative tests
-- Stage 5: 99/99 cumulative tests
+- Stage 5: 99/99 before the provider-shape correction
+- After provider-shape correction: 104/104 cumulative tests
+
+These additional tests were added specifically to cover the real provider response shape and regression behavior.
 
 
 ## Testing Requirements
