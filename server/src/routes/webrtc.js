@@ -189,11 +189,11 @@ router.get(
     const ttl = await roomTtlSeconds(roomCode);
 
     // ── Custom identifier for Cloudflare analytics ─────────────
-    // Format: mockhire:<interviewId-or-room>:<userId>
-    // Uses opaque IDs — no PII.
+    // Cloudflare enforces an undocumented 64-character limit on this field.
+    // roomCode (32) + ":" (1) + userId (24) = 57 characters.
     const customIdentifier = roomCode
-      ? `mockhire:${roomCode}:${req.user._id}`
-      : `mockhire:unknown:${req.user._id}`;
+      ? `${roomCode}:${req.user._id}`
+      : `unknown:${req.user._id}`;
 
     // ── Fetch credentials ──────────────────────────────────────
     const cfResponse = await fetchCloudflareCredentials({ ttl, customIdentifier });
