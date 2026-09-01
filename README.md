@@ -14,7 +14,7 @@ A self-contained platform for conducting technical interviews: schedule an inter
 <img src="https://img.shields.io/badge/WebRTC-P2P_Video-333333?style=for-the-badge&logo=webrtc&logoColor=white" alt="WebRTC" />
 <img src="https://img.shields.io/badge/JWT-Authentication-fb015b?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
 <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
-<img src="https://img.shields.io/badge/Tests-154_passing-brightgreen?style=for-the-badge" alt="154 tests passing" />
+<img src="https://img.shields.io/badge/Tests-156_passing-brightgreen?style=for-the-badge" alt="156 tests passing" />
 
 </div>
 
@@ -134,17 +134,41 @@ Security requirements were specified in the PRD before the first line of code an
 
 ## 🧪 Testing
 
-The repository maintains an exhaustive 154-assertion integration test suite.
+The repository maintains an exhaustive test suite, clearly separated into isolated/unit tests and standalone integration checks.
+
+### Default test suite
 
 ```bash
-cd server
-npm run dev            # tests exercise the live API — start it first
-node tests/m2-interviews.test.mjs
-node tests/m3-signaling.test.mjs
-node tests/stage5-cutoff.test.js
+npm test
 ```
 
-The suites run against a real server and a real database (self-cleaning: they delete every document they create). They test the integration layer (cookie flows, socket handshakes, authorization, rate limits, and TURN cutoff states) rather than mocked units.
+→ **104 native node:test specs** (99 server, 5 client)
+This is the canonical default unit/isolated test command. It does not require a running server, but it does require `MONGO_URI` to be set in the `server/.env` file or environment for the database-dependent tests.
+
+### Integration suite
+
+```bash
+npm run test:integration
+```
+
+→ **52 standalone integration checks**
+The integration suite is separate and executes end-to-end flow checks using actual `fetch` and `socket.io-client` requests.
+
+**Environment Prerequisites:**
+- **Database**: A valid `MONGO_URI` must be set in your `server/.env`.
+- **Running Server**: The integration checks (`m2-interviews` and `m3-signaling`) require the API server to already be running on its default port (`5000`).
+- **Startup Test Port**: The `m6c-startup` script tests cold-boot binding and spawns its own server; it requires port `5487` to be free.
+
+**How to run integration tests:**
+```bash
+# Terminal 1: Start the server
+cd server
+npm run dev 
+
+# Terminal 2: Run the integration suite from the project root
+cd video-interview-platform
+npm run test:integration
+```
 
 ## 📁 Project Structure
 

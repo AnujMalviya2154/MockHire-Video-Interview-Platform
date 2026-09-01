@@ -145,6 +145,11 @@ Role is chosen at registration. A user is exactly one role.
 ### Socket Events (all inside an authorized room)
 `join-room`, `peer-joined`, `signal` (offer/answer/ICE), `chat-message`, `code-change`, `code-language`, `peer-left`.
 
+**M11 Telemetry & Enforcement Events:**
+- `connection-mode` (Client → Server): Purpose is telemetry for server room reconciliation. Triggered by client after traversing `pc.getStats()` to find the active WebRTC pair. Payload includes `mode` (`direct` or `relay`). Protected by room authorization; spoofing from non-participants is impossible.
+- `turn-capacity-drain` (Server → Client): Purpose is relay enforcement. Triggered when the server-side budget reaches the 800 GiB safety cutoff. Payload includes a `deadline` (60 seconds).
+- `turn-drain-complete` (Server → Client): Purpose is final cutoff signaling. Triggered when the 60-second drain deadline expires, instructing clients to immediately close relay connections.
+
 ---
 
 ## 6. Milestones & Git Strategy

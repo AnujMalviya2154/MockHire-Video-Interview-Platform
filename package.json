@@ -1,0 +1,8 @@
+{
+  "name": "mockhire-root",
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix server run test && npm --prefix client run test",
+    "test:integration": "npm --prefix server run test:integration"
+  }
+}

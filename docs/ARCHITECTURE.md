@@ -362,6 +362,7 @@ setRemoteDescription ◄───────── relay ◄──────�
 ```
 
 - **ICE Candidate Gathering (STUN & TURN):** Both Google STUN and Cloudflare TURN (M11) are injected into the configuration. The browser's ICE agent discovers host, server-reflexive, and relay candidates in parallel. Direct P2P (host/srflx) is preferred; TURN relay is selected automatically by ICE only when symmetric NATs block direct connections.
+- **WebRTC Relay Classification (Telemetry):** The client derives the observed connection mode (`direct` vs `relay`) from the selected WebRTC candidate pair by traversing `pc.getStats()` to find the `active` or `selected` pair. This classification is reported to the server via the `connection-mode` socket event for server-side room reconciliation. This is operational telemetry, not an authoritative provider-side billing measurement. It ensures that actual relay usage is tracked, distinguishing between TURN being *configured* vs TURN being *used*.
 - **Perfect negotiation (D5.2):** both sides may offer at once (glare) —
   the *polite* peer (candidate, derived from role) rolls back and answers;
   the *impolite* peer (interviewer) ignores the colliding offer. Same

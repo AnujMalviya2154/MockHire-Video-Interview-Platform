@@ -43,6 +43,7 @@ guessing. Every milestone ends with an explicit review against this list.
 - CORS locked to explicit CLIENT_ORIGIN with credentials.
 - Rate limiting: general API + stricter auth-endpoint limiter.
 - Generic error messages; no implementation details leaked.
+- **Socket Event Flooding:** Application-level token-bucket rate limiter (`EVENTS_PER_SEC = 30`) drops excess events to protect against chat, signaling, or code-pad flooding. (Note: This is application-level abuse protection, not a complete defense against network-level DoS attacks).
 
 ## Frontend Security
 - No secrets in frontend bundles.
