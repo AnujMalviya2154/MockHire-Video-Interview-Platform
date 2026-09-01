@@ -9,13 +9,8 @@
 // payloads. The server never inspects them; it forwards to the one other
 // authorized participant of the room.
 
-// Public STUN only. Documented limitation (D5.3): pairs of symmetric NATs
-// would need a TURN relay, which costs money to run. STUN URLs are public
-// infrastructure, not secrets.
-const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
-
-export function createPeer({ polite, localStream, onTrack, onSignal, onConnectionChange }) {
-  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+export function createPeer({ iceServers, polite, localStream, onTrack, onSignal, onConnectionChange }) {
+  const pc = new RTCPeerConnection({ iceServers });
 
   // Stable senders for mic + camera; screen share swaps the video
   // sender's track via replaceTrack (D5.4) instead of renegotiating
@@ -115,6 +110,48 @@ export function createPeer({ polite, localStream, onTrack, onSignal, onConnectio
     if (t && !cameraTrack && t.direction === "sendrecv") t.direction = "recvonly";
   }
 
+  async function getTelemetryMode() {
+    try {
+      const stats = await pc.getStats();
+      let activePair = null;
+
+      stats.forEach((report) => {
+        if (report.type === "transport" && report.selectedCandidatePairId) {
+          activePair = stats.get(report.selectedCandidatePairId);
+        }
+      });
+
+      if (!activePair) {
+        stats.forEach((report) => {
+          if (
+            report.type === "candidate-pair" &&
+            (report.nominated || report.selected || report.state === "succeeded")
+          ) {
+            activePair = report;
+          }
+        });
+      }
+
+      if (!activePair) return "unknown";
+
+      const local = stats.get(activePair.localCandidateId);
+      const remote = stats.get(activePair.remoteCandidateId);
+      const lType = local?.candidateType;
+      const rType = remote?.candidateType;
+
+      if (lType === "relay" || rType === "relay") return "relay";
+      if (
+        (lType === "host" || lType === "srflx" || lType === "prflx") &&
+        (rType === "host" || rType === "srflx" || rType === "prflx")
+      ) {
+        return "direct";
+      }
+      return "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
   function destroy() {
     screenStream?.getTracks().forEach((t) => t.stop());
     pc.onnegotiationneeded = null;
@@ -124,5 +161,5 @@ export function createPeer({ polite, localStream, onTrack, onSignal, onConnectio
     pc.close();
   }
 
-  return { pc, handleSignal, shareScreen, stopShare, destroy };
+  return { pc, handleSignal, shareScreen, stopShare, destroy, getTelemetryMode };
 }

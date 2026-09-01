@@ -18,10 +18,46 @@ const roomState = new Map(); // roomCode -> { code, language, participants: Set<
 function getRoomState(roomCode) {
   let s = roomState.get(roomCode);
   if (!s) {
-    s = { code: "", language: "javascript", participants: new Set() };
+    s = { 
+      code: "", 
+      language: "javascript", 
+      participants: new Set(),
+      participantModes: new Map(),
+    };
     roomState.set(roomCode, s);
   }
   return s;
+}
+
+export function getRoomConnectionMode(roomCode) {
+  const state = roomState.get(roomCode);
+  if (!state || state.participants.size === 0) return "unknown";
+  
+  if (state.participantModes.size === 0) return "unknown";
+
+  let hasDirect = false;
+  let hasRelay = false;
+  let hasUnknown = state.participantModes.size < state.participants.size;
+
+  for (const p of state.participantModes.values()) {
+    if (p.mode === "relay") hasRelay = true;
+    else if (p.mode === "direct") hasDirect = true;
+    else hasUnknown = true;
+  }
+
+  if (hasRelay) return "relay";
+  if (hasDirect && !hasUnknown) return "direct";
+  if (hasDirect && hasUnknown) return "relay"; // Conservative policy
+  return "unknown";
+}
+
+/** Read-only snapshot of active room codes with at least one participant. */
+export function getActiveRoomCodes() {
+  const codes = [];
+  for (const [code, state] of roomState) {
+    if (state.participants.size > 0) codes.push(code);
+  }
+  return codes;
 }
 
 export function attachSocket(httpServer) {
@@ -163,6 +199,32 @@ export function attachSocket(httpServer) {
       })
     );
 
+    // ── Telemetry relay-state ───────────────────────────────────────
+    socket.on(
+      "connection-mode",
+      inRoom((payload) => {
+        if (!payload || typeof payload !== "object") return;
+        const { mode, sessionGeneration, sequence } = payload;
+        
+        if (!["direct", "relay"].includes(mode)) return;
+        if (typeof sessionGeneration !== "number" || typeof sequence !== "number") return;
+
+        const state = getRoomState(joinedRoom);
+        const current = state.participantModes.get(socket.user.id);
+
+        if (current) {
+          if (sessionGeneration < current.sessionGeneration) return;
+          if (sessionGeneration === current.sessionGeneration && sequence <= current.sequence) return;
+        }
+
+        state.participantModes.set(socket.user.id, {
+          mode,
+          sessionGeneration,
+          sequence,
+        });
+      })
+    );
+
     // ── Teardown ────────────────────────────────────────────────────
     socket.on("disconnect", () => {
       clearInterval(refill);
@@ -178,6 +240,7 @@ export function attachSocket(httpServer) {
         
         if (!stillHere) {
           state.participants.delete(socket.user.id);
+          state.participantModes.delete(socket.user.id);
           socket.to(joinedRoom).emit("peer-left", { id: socket.user.id });
         }
         

@@ -97,6 +97,7 @@ export const api = {
       `/interviews?page=${page}&limit=${limit}${status ? `&status=${status}` : ""}`
     ),
   getRoom: (roomCode) => request(`/interviews/room/${encodeURIComponent(roomCode)}`),
+  getIceServers: (roomCode) => request(`/webrtc/ice-servers${roomCode ? `?roomCode=${encodeURIComponent(roomCode)}` : ''}`),
   submitFeedback: (id, payload) =>
     request(`/interviews/${encodeURIComponent(id)}/feedback`, { method: "PATCH", body: payload }),
   cancelInterview: (id) =>
