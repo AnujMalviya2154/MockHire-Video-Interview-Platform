@@ -23,6 +23,8 @@ Thumbs.db
 # Local editor/assistant tooling (not project source)
 .claude/
 .impeccable/
+.gemini/
+artifacts/
 
 # Personal notes
 INTERVIEW-NOTES.md

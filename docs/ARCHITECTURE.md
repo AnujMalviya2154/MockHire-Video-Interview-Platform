@@ -346,9 +346,7 @@ setRemoteDescription ◄───────── relay ◄──────�
                     (audio+video never touch the server)
 ```
 
-- **STUN, not TURN (D5.3):** one public STUN server discovers each peer's
-  public address; media then flows directly. No relay server in v1 —
-  symmetric-NAT pairs are a documented limitation.
+- **ICE Candidate Gathering (STUN & TURN):** Both Google STUN and Cloudflare TURN (M11) are injected into the configuration. The browser's ICE agent discovers host, server-reflexive, and relay candidates in parallel. Direct P2P (host/srflx) is preferred; TURN relay is selected automatically by ICE only when symmetric NATs block direct connections.
 - **Perfect negotiation (D5.2):** both sides may offer at once (glare) —
   the *polite* peer (candidate, derived from role) rolls back and answers;
   the *impolite* peer (interviewer) ignores the colliding offer. Same
