@@ -56,17 +56,17 @@ graph TD
         TURN[Cloudflare TURN]
     end
 
-    SignalA <-->|Auth & Signalling| Server
-    SignalB <-->|Auth & Signalling| Server
+    SignalA <-->|Auth and Signalling| Server
+    SignalB <-->|Auth and Signalling| Server
     Server <-->|Persist| DB
     
     MediaA -.->|ICE Candidate Discovery| STUN
     MediaB -.->|ICE Candidate Discovery| STUN
     
-    MediaA <-->|Direct P2P DTLS-SRTP <br/>(Priority 1)| MediaB
+    MediaA <-->|Direct P2P DTLS-SRTP - Priority 1| MediaB
     
-    MediaA -.->|Fallback Relay DTLS-SRTP <br/>(Priority 2)| TURN
-    TURN -.->|Fallback Relay DTLS-SRTP <br/>(Priority 2)| MediaB
+    MediaA -.->|Fallback Relay DTLS-SRTP - Priority 2| TURN
+    TURN -.->|Fallback Relay DTLS-SRTP - Priority 2| MediaB
 
     classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
     class STUN,TURN external;
