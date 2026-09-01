@@ -17,7 +17,7 @@ security treated as a first-class requirement throughout.
 <img src="https://img.shields.io/badge/WebRTC-P2P_Video-333333?style=for-the-badge&logo=webrtc&logoColor=white" alt="WebRTC" />
 <img src="https://img.shields.io/badge/JWT-Authentication-fb015b?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
 <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
-<img src="https://img.shields.io/badge/Tests-52_passing-brightgreen?style=for-the-badge" alt="52 tests passing" />
+<img src="https://img.shields.io/badge/Tests-154_passing-brightgreen?style=for-the-badge" alt="154 tests passing" />
 
 </div>
 
@@ -90,6 +90,8 @@ commit):
 | `JWT_SECRET` | ≥ 32 chars. Generate: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
 | `CLIENT_ORIGIN` | Client URL for CORS (default `http://localhost:5173`) |
 | `NODE_ENV` | `development` or `production` |
+| `TURN_KEY_ID` | (Optional) Cloudflare Realtime API Key ID for TURN relay |
+| `TURN_KEY_API_TOKEN` | (Optional) Cloudflare Realtime API Token |
 
 The server refuses to start with a missing or short `JWT_SECRET` — a weak
 secret makes every token forgeable, so it's treated as a crash-worthy

@@ -39,7 +39,7 @@ This is NOT Cloudflare's authoritative usage metric. We use byte-based accountin
 
 ### 6. TURN-Backed Room State & Telemetry
 A room is considered TURN-backed when either participant reports via client telemetry that their successful selected ICE candidate pair uses a relay candidate. 
-This telemetry is authenticated and operationally useful, but because it originates from the client, it is not a cryptographically authoritative billing truth. This is an accepted portfolio-project limitation. When peers disagree (e.g., one reports direct, the other relay), the server conservatively reconciles the room as TURN-backed.
+This telemetry is authenticated and operationally useful, but because it originates from the client, it relies on client honesty. Provider-authoritative usage reconciliation is deferred. MockHire currently uses conservative application-side usage estimation and provider analytics for monitoring rather than provider analytics as the real-time cutoff authority. This is an accepted portfolio-project limitation. When peers disagree (e.g., one reports direct, the other relay), the server conservatively reconciles the room as TURN-backed.
 
 ### 7. The 800 GiB Safety Cutoff & Graceful Drain
 We will implement a hard internal cutoff at **800 GiB** for the current month. This threshold provides a substantial safety margin below the provider's 1,000 GB free allowance and is designed to minimize the risk of paid overage under normal and accidental usage.
@@ -76,7 +76,7 @@ This is the exact implementation sequence decided for M11:
 
 ## Implementation Status
 
-M11 implementation is complete through Stage 5 of 7. Local provider integration has been verified, while physical cross-network TURN verification remains pending.
+M11 implementation is 100% COMPLETE. Local provider integration, physical cross-network TURN verification, and final security audits have all passed.
 
 ✅ Stage 1 — COMPLETE
 Implemented authenticated ICE endpoint `/api/webrtc/ice-servers` with Cloudflare credential generation, 8-hour/room TTL validation, STUN-only fallback, and security normalization.
@@ -93,11 +93,19 @@ Implemented `getStats` connection-mode telemetry, generation/sequence race-condi
 ✅ Stage 5 — COMPLETE
 Implemented the 800 GiB safety cutoff, active monitoring loop, graceful 60-second TURN drain, STUN-only reconnect logic, and post-cutoff migration handling.
 
-⏳ Stage 6 — IN PROGRESS / PHYSICAL VERIFICATION PENDING
-Physical production/cross-network verification remains outstanding.
+✅ Stage 6 — PASS
+Stage 6 physical verification passed. Real-world cross-network testing confirmed successful TURN relay selection and media operation, while same-network testing confirmed direct P2P behavior. Cloudflare TURN analytics also recorded provider-side traffic during the testing window.
 
-⏳ Stage 7 — PENDING
-Final documentation/security/deployment verification remains outstanding.
+**Physical Verification Details:**
+- **Networks:** Wi-Fi ↔ Wi-Fi (Same Network), Wi-Fi ↔ Jio (Cellular), Wi-Fi ↔ Vi (Cellular).
+- **Functionality:** Audio, Video, Chat, Code Synchronization, Screen Sharing, and Camera Recovery all succeeded across all tested networks.
+- **Relay Evidence:** `chrome://webrtc-internals` verified that cellular connections successfully selected `relay` candidate pairs pointing to Cloudflare TURN IP addresses.
+- **Direct P2P Evidence:** Same-network testing (Wi-Fi ↔ Wi-Fi) correctly selected local network IP addresses (`192.168.x.x`), confirming that the presence of TURN credentials does not override WebRTC's preference for direct host candidates when viable.
+- **Analytics Evidence:** The non-zero provider-side traffic observed during the testing window (Total Egress ≈ 17.32 MB, Total Ingress ≈ 15.73 MB) is consistent with the confirmed TURN relay session, although the aggregate dashboard total cannot be attributed exclusively to that individual call.
+- **Limitations:** Browser automation is unavailable in this repository; physical testing was limited to the listed Indian cellular and local networks. 800 GiB cutoff enforcement was exclusively verified via controlled automated suites, not by exhausting a real 800 GiB transfer limit.
+
+✅ Stage 7 — COMPLETE
+Final documentation, security boundaries, production configurations, and deployment verification have passed. M11 is fully finalized and release-ready.
 
 ### Stage 1 Provider Integration Correction
 
