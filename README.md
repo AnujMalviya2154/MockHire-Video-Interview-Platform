@@ -39,34 +39,34 @@ Built with the MERN stack. No paid video SDKs, no third-party APIs: native WebRT
 
 ```mermaid
 graph TD
-    subgraph Browser A
-        MediaA[WebRTC Media]
-        SignalA[Socket.IO / REST]
+    subgraph BrowserA [Browser A]
+        MediaA["WebRTC Media"]
+        SignalA["Socket.IO / REST"]
     end
     
-    subgraph Browser B
-        MediaB[WebRTC Media]
-        SignalB[Socket.IO / REST]
+    subgraph BrowserB [Browser B]
+        MediaB["WebRTC Media"]
+        SignalB["Socket.IO / REST"]
     end
     
-    subgraph Infrastructure
-        Server[Express + Socket.IO :5000]
-        DB[(MongoDB)]
-        STUN[Google STUN]
-        TURN[Cloudflare TURN]
+    subgraph Infrastructure [Infrastructure]
+        Server["Express + Socket.IO :5000"]
+        DB[("MongoDB")]
+        STUN["Google STUN"]
+        TURN["Cloudflare TURN"]
     end
 
-    SignalA <-->|Auth and Signalling| Server
-    SignalB <-->|Auth and Signalling| Server
-    Server <-->|Persist| DB
+    SignalA <-->|"Auth and Signalling"| Server
+    SignalB <-->|"Auth and Signalling"| Server
+    Server <-->|"Persist"| DB
     
-    MediaA -.->|ICE Candidate Discovery| STUN
-    MediaB -.->|ICE Candidate Discovery| STUN
+    MediaA -.->|"ICE Candidate Discovery"| STUN
+    MediaB -.->|"ICE Candidate Discovery"| STUN
     
-    MediaA <-->|Direct P2P DTLS-SRTP - Priority 1| MediaB
+    MediaA <-->|"Direct P2P DTLS-SRTP - Priority 1"| MediaB
     
-    MediaA -.->|Fallback Relay DTLS-SRTP - Priority 2| TURN
-    TURN -.->|Fallback Relay DTLS-SRTP - Priority 2| MediaB
+    MediaA -.->|"Fallback Relay DTLS-SRTP - Priority 2"| TURN
+    TURN -.->|"Fallback Relay DTLS-SRTP - Priority 2"| MediaB
 
     classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
     class STUN,TURN external;
@@ -102,10 +102,10 @@ sequenceDiagram
         S-->>C: Return STUN-only config
     end
 
-    Note over C,CF: If WebRTC selects a TURN relay pair, Client reports telemetry.
+    Note over C, CF: If WebRTC selects a TURN relay pair, Client reports telemetry.
     
     loop Every 10 Seconds
-        C->>S: Socket: getStats telemetry (relay selected)
+        C->>S: Socket getStats telemetry (relay selected)
         S->>S: Increment estimated time actively using relay
     end
 ```
