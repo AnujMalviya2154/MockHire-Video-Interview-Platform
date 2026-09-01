@@ -57,6 +57,11 @@ guessing. Every milestone ends with an explicit review against this list.
 - Never log passwords, tokens, secrets, or personal data.
 - Meaningful server-side errors without sensitive detail.
 
+## Third-Party Providers & APIs
+- Permanent provider secrets (e.g., API keys) must never be sent to the client.
+- Generate and issue ephemeral, short-lived credentials for client use.
+- Hard safety boundaries (e.g., usage cutoffs, egress limits) must be enforced at the application level to prevent financial abuse.
+
 ## Dependencies
 - Stable, maintained packages only; minimal dependency surface.
 - `npm audit` clean before every milestone commit.

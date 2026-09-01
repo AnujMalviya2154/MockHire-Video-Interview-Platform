@@ -125,8 +125,8 @@ Role is chosen at registration. A user is exactly one role.
                                             └────────────────┘
 ```
 
-- **Media path:** peer-to-peer (WebRTC with public STUN). The server only relays signaling — video never touches the backend.
-- **Data models:** `User { name, email, password(hash), role }`, `Interview { title, description, interviewer→User, candidate→User, scheduledAt, roomCode, status, feedback{rating, comments, result} }`.
+- **Media path:** peer-to-peer (WebRTC with STUN + Cloudflare TURN fallback). The server only relays signaling — video never touches the backend.
+- **Data models:** `User`, `Interview`, `TurnUsage`.
 
 ### API Surface
 | Method | Route | Auth | Purpose |
@@ -138,6 +138,7 @@ Role is chosen at registration. A user is exactly one role.
 | POST | /api/interviews | ✓ interviewer | Schedule |
 | GET | /api/interviews | ✓ | List own (as either role) |
 | GET | /api/interviews/:roomCode | ✓ participant | Room details for joining |
+| GET | /api/webrtc/ice-servers | ✓ participant | Authenticated ICE endpoint for TURN credentials |
 | PATCH | /api/interviews/:id/feedback | ✓ owning interviewer | Submit feedback |
 | PATCH | /api/interviews/:id/cancel | ✓ owning interviewer | Cancel |
 
@@ -160,6 +161,10 @@ One commit + push per completed milestone, so the GitHub history itself document
 | M5 | Interview room | `feat(client): webrtc video room with chat, screen share, code editor` | Full in-call experience |
 | M6 | Feedback + polish | `feat: feedback workflow, status badges, UX polish` | End-to-end flow complete |
 | M7 | Docs + verification | `docs: README with setup, architecture and security notes` | Build verified, README |
+| M8 | First-login bugfix | `fix: address first-login state inconsistency` | Reliable first-login navigation |
+| M9 | WebRTC robusting | `fix: perfect negotiation edge cases on mobile` | Robust WebRTC signaling |
+| M10| Room expiry | `feat: enforce 4h expiry for completed rooms` | Socket teardown safety |
+| M11| TURN connectivity | `feat: add Cloudflare TURN connectivity and safety controls` | Cross-network video relay |
 
 **Acceptance for v1:** two browsers on one machine can register (interviewer + candidate), schedule, join the same room, see/hear each other, chat, share screen, co-edit code, submit feedback, and see the result on the candidate dashboard — with an outsider unable to join the room even with the URL.
 
@@ -169,9 +174,8 @@ One commit + push per completed milestone, so the GitHub history itself document
 
 | Risk | Mitigation |
 |---|---|
-| WebRTC fails across strict NATs (no TURN server in v1) | Acceptable for demo/LAN; documented; TURN listed as future work |
 | MongoDB not installed locally | Support MongoDB Atlas free tier via `MONGO_URI` |
 | Browser blocks camera on http | localhost is exempt from secure-context rule; documented |
 
 ## 8. Future Enhancements (v2 backlog)
-Recording, TURN server, multi-panel interviews, code execution sandbox, email notifications, password reset, admin analytics dashboard.
+Recording, multi-panel interviews, code execution sandbox, email notifications, password reset, admin analytics dashboard.

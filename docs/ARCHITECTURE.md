@@ -75,7 +75,10 @@ video-interview-platform/
 │       ├── M6b-dark-mode.md
 │       ├── M6c-startup-and-readiness.md
 │       ├── M7-docs-and-verification.md
-│       └── M8-first-login-investigation.md
+│       ├── M8-first-login-investigation.md
+│       ├── M9-webrtc-signaling-edge-cases.md
+│       ├── M10-room-expiry.md
+│       └── M11-turn-connectivity-and-safety.md
 ├── server/                     # Express + Socket.IO backend
 │   ├── package.json
 │   ├── .env.example            # documented config (real .env gitignored)
@@ -83,9 +86,10 @@ video-interview-platform/
 │       ├── index.js            # entry: env checks → DB → http server
 │       ├── app.js              # express app + middleware stack
 │       ├── config/db.js        # mongoose connection
-│       ├── models/             # User.js, Interview.js
+│       ├── models/             # User.js, Interview.js, TurnUsage.js
 │       ├── middleware/         # auth.js, errorHandler.js
-│       ├── routes/             # auth.js, interviews.js
+│       ├── routes/             # auth.js, interviews.js, webrtc.js
+│       ├── services/           # turnAccounting.js, turnBudget.js
 │       ├── socket/             # index.js — auth'd signaling, chat, code sync
 │       └── utils/asyncHandler.js
 │   └── tests/                  # integration suites (run against live server)
@@ -192,6 +196,12 @@ with a plain-text password, no matter which route does it.
 | status | enum: scheduled / completed / cancelled |
 | feedback | rating 1–5, comments, result enum (pending/pass/fail) |
 
+**TurnUsage** (`models/TurnUsage.js`)
+| field | notes |
+|---|---|
+| monthKey | string: `YYYY-MM` (UTC) |
+| egressBytes | number: cumulative bytes mapped from elapsed relay time |
+
 ### 3.4 Authentication flow
 
 ```
@@ -234,6 +244,11 @@ All routes under `/api/interviews` sit behind `requireAuth` (router-level
 | GET | `/room/:roomCode` | participant only | Join-time lookup; 404 for outsiders, 410 if cancelled |
 | PATCH | `/:id/feedback` | owning interviewer | rating 1–5 + comments + pass/fail ⇒ status `completed` |
 | PATCH | `/:id/cancel` | owning interviewer | Only from `scheduled` state |
+
+**WebRTC API** (`/api/webrtc`)
+| Method | Route | Who | Purpose |
+|---|---|---|---|
+| GET | `/ice-servers` | participant only | Authenticated ICE endpoint; returns ephemeral Cloudflare TURN credentials |
 
 ### The four load-bearing patterns
 
@@ -543,6 +558,7 @@ rule in `docs/SECURITY-CHECKLIST.md`. Current implementation status:
 | Readiness gate: 503 not 500, no request echo in body | ✅ M6c |
 | Startup logs carry no secret/credential/PII | ✅ M6c |
 | Prod: single-origin static serving, strict CSP (hash-pinned inline script), immutable asset caching | ✅ M7 |
+| Cloudflare TURN Ephemeral Credentials + 800 GiB Cutoff & Drain | ✅ M11 |
 | `npm audit --omit=dev` clean | ✅ server (0 vulns) — ⚠️ client: 1 accepted exception, see below |
 
 **Open exception — the only one in the project.** `react-router` has no
